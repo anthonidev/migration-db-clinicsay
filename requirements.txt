@@ -1,0 +1,8 @@
+markdown-it-py==4.0.0
+mdurl==0.1.2
+psycopg2-binary==2.9.11
+pyfiglet==1.0.4
+Pygments==2.19.2
+python-dotenv==1.2.1
+PyYAML==6.0.3
+rich==14.2.0
