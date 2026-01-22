@@ -177,6 +177,49 @@ sites:
       # Opcional: Piso, oficina, referencia
       street_line2: ""                  # Ej: "2º Planta, Oficina B"
 
+    # --- Líneas de Facturación ---
+    # Define qué empresa emite facturas para esta sede.
+    # Por defecto usa la Company principal del config.
+    # Al menos una línea debe tener is_default: true
+    billing_lines:
+      - name: "Línea Principal"         # Nombre de la línea
+        description: ""                 # Descripción opcional
+        is_default: true                # ¿Es la línea por defecto?
+
+# ------------------------------------------------------------
+# PASO 5: PAYMENT METHODS (Métodos de Pago)
+# ------------------------------------------------------------
+# Métodos de pago disponibles para los pacientes.
+# Configura los métodos que acepta la clínica.
+# Tipos: CASH, CARD_PRESENT, CARD_NOT_PRESENT, BANK_TRANSFER,
+#        WALLET, CHECK, INSURANCE, CORPORATE, FINANCING,
+#        GIFT_CARD, INTERNAL_BALANCE, OTHER
+
+payment_methods:
+  - # Efectivo
+    name: "Efectivo"
+    payment_method_type: "CASH"
+    requires_reference: false         # ¿Requiere número de referencia?
+    allows_refunds: true              # ¿Permite devoluciones?
+    is_online_method: false           # ¿Es método de pago online?
+    sort_order: 1                     # Orden en la UI
+
+  - # Tarjeta (presencial - TPV)
+    name: "Tarjeta"
+    payment_method_type: "CARD_PRESENT"
+    requires_reference: false
+    allows_refunds: true
+    is_online_method: false
+    sort_order: 2
+
+  - # Transferencia bancaria
+    name: "Transferencia"
+    payment_method_type: "BANK_TRANSFER"
+    requires_reference: true          # Requiere número de referencia
+    allows_refunds: true
+    is_online_method: false
+    sort_order: 3
+
 # ============================================================
 # EJEMPLO COMPLETO: CLÍNICA "SALUD TOTAL" EN ESPAÑA
 # ============================================================
@@ -227,6 +270,9 @@ sites:
 #       postal_code: "28013"
 #       street_line1: "Calle Gran Vía 45"
 #       street_line2: "2º Planta"
+#     billing_lines:
+#       - name: "Línea Principal"
+#         is_default: true
 #
 #   - name: "Sede Norte"
 #     phone: "+34 91 987 6543"
@@ -241,6 +287,21 @@ sites:
 #       postal_code: "28036"
 #       street_line1: "Paseo de la Castellana 150"
 #       street_line2: "Bajo A"
+#     billing_lines:
+#       - name: "Línea Principal"
+#         is_default: true
+#
+# payment_methods:
+#   - name: "Efectivo"
+#     payment_method_type: "CASH"
+#     sort_order: 1
+#   - name: "Tarjeta"
+#     payment_method_type: "CARD_PRESENT"
+#     sort_order: 2
+#   - name: "Transferencia"
+#     payment_method_type: "BANK_TRANSFER"
+#     requires_reference: true
+#     sort_order: 3
 # ============================================================
 '''
 

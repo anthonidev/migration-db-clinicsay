@@ -1,0 +1,192 @@
+# ============================================================
+# TEMPLATE: PROFESSIONAL (Nivel 2)
+# ============================================================
+# Profesionales clínicos o terapeutas que atienden pacientes.
+# Ejemplos: odontólogos, fisioterapeutas, psicólogos, médicos.
+#
+# DEPENDENCIAS (deben existir antes):
+#   - Clinic (Level 1) → clinic_id
+#   - Site (Level 2) → site_ids
+#   - User (Level 0) → user_id (opcional)
+#   - Company (Level 1) → legal_entity_id (opcional, para freelancers)
+#
+# REFERENCIA: docs/DOMAIN/resources/professional.md
+# ============================================================
+
+professionals:
+
+  # ------------------------------------------------------------
+  # EJEMPLO 1: Profesional interno (empleado de la clínica)
+  # ------------------------------------------------------------
+  - # REQUERIDO: ID de la clínica a la que pertenece
+    # Debe existir en la tabla 'clinic'
+    clinic_id: "{{clinic_id}}"  # Ej: "3295df05-262c-4290-80aa-f243dd92b842"
+
+    # REQUERIDO: Nombre del profesional
+    name: "María"  # Ej: "María", "Carlos", "Ana"
+
+    # REQUERIDO: Apellido(s) del profesional
+    last_name: "García López"  # Ej: "García López", "Martínez Ruiz"
+
+    # REQUERIDO: Tipo de profesional
+    # Identificador del tipo (definido por la clínica)
+    # Ejemplos comunes: "doctor", "nurse", "physiotherapist", "psychologist"
+    professional_type_id: "doctor"  # Ej: "doctor", "dentist", "physio"
+
+    # ----------------------------------------------------------
+    # CAMPOS OPCIONALES CON VALOR POR DEFECTO
+    # ----------------------------------------------------------
+
+    # Tipo de relación laboral con la clínica
+    # Valores válidos:
+    #   - INTERNAL: Empleado interno de la clínica (DEFAULT)
+    #   - FREELANCER: Profesional independiente (autónomo)
+    #   - CONTRACTOR: Contratista externo
+    #   - VISITING: Profesional visitante
+    employment_type: "INTERNAL"  # DEFAULT: "INTERNAL"
+
+    # Lista de especialidades del profesional
+    # Array de strings con las especialidades
+    specialties:  # DEFAULT: [] (array vacío)
+      - "Medicina General"
+      - "Medicina Estética"
+    # Más ejemplos: ["Endodoncia", "Ortodoncia"], ["Fisioterapia Deportiva"]
+
+    # IDs de los sites (sedes) donde atiende el profesional
+    # Debe contener UUIDs válidos de sites de la misma clínica
+    site_ids:  # DEFAULT: [] (array vacío)
+      - "{{site_id_1}}"  # Ej: "64716f87-e83c-47b1-8d55-7fd8ba3225fd"
+      # - "{{site_id_2}}"  # Agregar más sites si atiende en varias sedes
+
+    # IDs de políticas de agenda específicas para este profesional
+    # Permite configurar horarios y restricciones personalizadas
+    scheduling_policy_ids: []  # DEFAULT: [] (array vacío)
+
+    # Estado del registro (ciclo de vida)
+    # Valores válidos:
+    #   - ACTIVE: Activo y operativo (DEFAULT)
+    #   - INACTIVE: Inactivo temporalmente
+    #   - ARCHIVED: Archivado (soft delete)
+    #   - DELETED: Deprecado, usar ARCHIVED
+    record_status: "ACTIVE"  # DEFAULT: "ACTIVE"
+
+    # ----------------------------------------------------------
+    # CAMPOS COMPLETAMENTE OPCIONALES (pueden omitirse)
+    # ----------------------------------------------------------
+
+    # ID único del profesional
+    # Si es null o se omite, se genera automáticamente (UUID)
+    id: null  # Ej: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    # URL de la foto de perfil del profesional
+    # Se muestra en agenda, fichas de cita y perfil público
+    profile_picture_url: null  # Ej: "https://storage.clinica.com/photos/maria-garcia.jpg"
+
+    # Color para identificar al profesional en la agenda
+    # Formato hexadecimal con #
+    color: "#3B82F6"  # Ej: "#3B82F6" (azul), "#10B981" (verde), "#F59E0B" (naranja)
+
+    # Email de contacto del profesional
+    email: "maria.garcia@clinica.es"  # Ej: "dr.garcia@clinicasenses.es"
+
+    # Teléfono de contacto del profesional
+    # Formato internacional recomendado
+    phone: "+34 612 345 678"  # Ej: "+34 612 345 678"
+
+    # ID de la entidad legal (Company) si factura como freelancer
+    # Solo necesario si employment_type = FREELANCER
+    # Debe existir en la tabla 'company' con type = FREELANCER_LEGALENTITY
+    legal_entity_id: null  # Ej: "uuid-de-company-freelancer"
+
+    # ID del usuario del sistema si tiene acceso a la plataforma
+    # Debe existir en la tabla 'app_user'
+    # null si el profesional no necesita acceso al sistema
+    user_id: null  # Ej: "uuid-de-app-user"
+
+    # Metadata adicional del ciclo de vida
+    # Generalmente gestionado automáticamente por el sistema
+    record_metadata: null  # Ej: {"archivedAt": "2024-01-15T10:00:00Z"}
+
+    # Metadata adicional personalizada
+    # Campos extra que no están en el schema estándar
+    metadata:  # null o objeto con datos adicionales
+      license_number: "28/123456"  # Número de colegiado
+      certifications:
+        - "Máster en Medicina Estética"
+      # Más campos personalizados según necesidad
+
+  # ------------------------------------------------------------
+  # EJEMPLO 2: Profesional freelancer (autónomo)
+  # ------------------------------------------------------------
+  - clinic_id: "{{clinic_id}}"
+    name: "Carlos"
+    last_name: "Martínez Ruiz"
+    professional_type_id: "physiotherapist"
+
+    # Freelancer: factura de forma independiente
+    employment_type: "FREELANCER"
+
+    # Para freelancers, vincular a su entidad legal
+    legal_entity_id: "{{company_freelancer_id}}"  # Company tipo FREELANCER_LEGALENTITY
+
+    specialties:
+      - "Fisioterapia Deportiva"
+      - "Rehabilitación"
+
+    site_ids:
+      - "{{site_id_1}}"
+
+    # Freelancer con acceso al sistema
+    user_id: "{{user_id}}"
+
+    color: "#10B981"
+    email: "carlos.martinez@gmail.com"
+    phone: "+34 622 987 654"
+
+    record_status: "ACTIVE"
+
+    metadata:
+      license_number: "FIS-MAD-4567"
+      hourly_rate: 45.00
+      commission_percentage: 30
+
+# ============================================================
+# NOTAS DE MIGRACIÓN
+# ============================================================
+#
+# 1. ORDEN DE CREACIÓN:
+#    - Primero crear Sites si no existen
+#    - Si el profesional tendrá acceso al sistema, crear User primero
+#    - Para freelancers, crear Company con type FREELANCER_LEGALENTITY
+#
+# 2. VALIDACIONES:
+#    - site_ids debe contener solo IDs de Sites de la misma Clinic
+#    - Si employment_type = FREELANCER, considerar agregar legal_entity_id
+#    - user_id debe existir en app_user si se especifica
+#
+# 3. REGLAS DE NEGOCIO:
+#    - Professionals con record_status = ARCHIVED no aparecen en listados
+#    - Professionals archivados no pueden asignarse a nuevas citas
+#    - El color ayuda a identificar visualmente en la agenda
+#
+# 4. CAMPOS AUTO-GENERADOS (no incluir en migración):
+#    - created_at: timestamp de creación
+#    - updated_at: timestamp de última actualización
+#
+# ============================================================
+# VALORES DE ENUMS
+# ============================================================
+#
+# employment_type:
+#   - INTERNAL: Empleado interno de la clínica
+#   - FREELANCER: Profesional independiente (autónomo)
+#   - CONTRACTOR: Contratista externo
+#   - VISITING: Profesional visitante
+#
+# record_status:
+#   - ACTIVE: Activo y operativo
+#   - INACTIVE: Inactivo temporalmente
+#   - ARCHIVED: Archivado (soft delete)
+#   - DELETED: Deprecado, usar ARCHIVED
+#
+# ============================================================

@@ -1,0 +1,278 @@
+# ============================================================
+# TEMPLATE: CONSENT_TEMPLATE (Nivel 2)
+# ============================================================
+# Plantillas de consentimiento informado para procedimientos.
+# Define la estructura, firmantes requeridos y formato PDF
+# de los documentos de consentimiento.
+#
+# DEPENDENCIAS (deben existir antes):
+#   - Clinic (Level 1) → clinic_id
+#
+# REFERENCIA: docs/DOMAIN/consents/consent_template.md
+# ============================================================
+
+consent_templates:
+
+  # ------------------------------------------------------------
+  # EJEMPLO 1: Consentimiento completo (tratamiento estético)
+  # ------------------------------------------------------------
+  - # ==========================================================
+    # CAMPOS REQUERIDOS (NOT NULL)
+    # ==========================================================
+
+    # REQUERIDO: ID de la clínica
+    clinic_id: "{{clinic_id}}"  # UUID de la clínica
+
+    # REQUERIDO: Nombre de la plantilla
+    name: "Consentimiento Tratamiento Facial"  # Ej: "Consentimiento Botox", "CI Depilación Láser"
+
+    # REQUERIDO: Idioma por defecto del documento
+    # Código ISO 639-1: es, en, ca, eu, gl, pt, fr, de, it
+    default_language: "es"  # Ej: "es", "en", "ca"
+
+    # ==========================================================
+    # CAMPOS CON DEFAULT (opcionales, tienen valor por defecto)
+    # ==========================================================
+
+    # Estado de la plantilla
+    # Valores: DRAFT (default), ACTIVE, ARCHIVED
+    consent_template_status: "ACTIVE"  # DEFAULT: "DRAFT"
+
+    # Versión de la plantilla
+    consent_template_version: "1.0"  # DEFAULT: "1.0"
+
+    # Estado del registro (ciclo de vida)
+    # Valores: ACTIVE (default), INACTIVE, ARCHIVED, DELETED
+    record_status: "ACTIVE"  # DEFAULT: "ACTIVE"
+
+    # ==========================================================
+    # CAMPOS OPCIONALES (nullable)
+    # ==========================================================
+
+    # ID único de la plantilla
+    # Si es null, se genera automáticamente (ULID)
+    id: null  # Ej: "01HXYZ123456789ABCDEF"
+
+    # Descripción detallada de la plantilla
+    description: "Consentimiento informado para tratamientos faciales estéticos no invasivos"
+
+    # Categoría del consentimiento
+    # Ejemplos: "estetica", "medico", "quirurgico", "dental", "fisioterapia"
+    category: "estetica"  # Ej: "estetica", "medico", "dental"
+
+    # Configuración de firmantes requeridos
+    # Define quién debe firmar el consentimiento
+    signer_config:
+      # Lista de firmantes requeridos
+      signers:
+        - type: "patient"           # Tipo: patient, guardian, professional, witness
+          required: true            # ¿Es obligatorio?
+          order: 1                  # Orden de firma
+          label: "Paciente"         # Etiqueta para mostrar
+        - type: "professional"
+          required: true
+          order: 2
+          label: "Profesional tratante"
+      # ¿Requiere testigo?
+      requires_witness: false
+      # ¿Permite firma de tutor/representante?
+      allows_guardian: true
+      # Edad mínima para firmar sin tutor
+      min_age_for_self_sign: 18
+
+    # Configuración del template PDF
+    # Define cómo se genera el documento PDF
+    pdf_template_config:
+      # Tipo de template: html, markdown, external
+      template_type: "html"
+      # Cabecera del documento
+      header:
+        show_logo: true
+        show_clinic_info: true
+        show_date: true
+      # Pie del documento
+      footer:
+        show_page_numbers: true
+        show_version: true
+      # Secciones del documento
+      sections:
+        - title: "Información del tratamiento"
+          content_key: "treatment_info"
+          required: true
+        - title: "Riesgos y complicaciones"
+          content_key: "risks"
+          required: true
+        - title: "Alternativas"
+          content_key: "alternatives"
+          required: false
+        - title: "Declaración del paciente"
+          content_key: "patient_declaration"
+          required: true
+
+    # Configuración de automatización
+    # Define cuándo se solicita automáticamente
+    automation_config:
+      # ¿Se solicita automáticamente al agendar?
+      auto_request_on_booking: false
+      # IDs de tratamientos que requieren este consentimiento
+      treatment_ids: []
+      # IDs de categorías que requieren este consentimiento
+      category_ids: []
+      # Días antes de la cita para solicitar firma
+      days_before_appointment: 3
+      # ¿Enviar recordatorio por email?
+      send_email_reminder: true
+      # ¿Enviar recordatorio por SMS?
+      send_sms_reminder: false
+
+    # Metadata del registro (ciclo de vida)
+    record_metadata: null  # Ej: {"archivedAt": "2024-01-15T10:00:00Z"}
+
+  # ------------------------------------------------------------
+  # EJEMPLO 2: Consentimiento mínimo (solo campos requeridos)
+  # ------------------------------------------------------------
+  - clinic_id: "{{clinic_id}}"
+    name: "Consentimiento General"
+    default_language: "es"
+
+  # ------------------------------------------------------------
+  # EJEMPLO 3: Consentimiento médico con testigo
+  # ------------------------------------------------------------
+  - clinic_id: "{{clinic_id}}"
+    name: "Consentimiento Procedimiento Quirúrgico Menor"
+    default_language: "es"
+    description: "Consentimiento para procedimientos quirúrgicos menores ambulatorios"
+    category: "quirurgico"
+    consent_template_status: "ACTIVE"
+    consent_template_version: "2.0"
+    signer_config:
+      signers:
+        - type: "patient"
+          required: true
+          order: 1
+          label: "Paciente"
+        - type: "professional"
+          required: true
+          order: 2
+          label: "Médico responsable"
+        - type: "witness"
+          required: true
+          order: 3
+          label: "Testigo"
+      requires_witness: true
+      allows_guardian: true
+      min_age_for_self_sign: 18
+
+  # ------------------------------------------------------------
+  # EJEMPLO 4: Consentimiento para menores
+  # ------------------------------------------------------------
+  - clinic_id: "{{clinic_id}}"
+    name: "Consentimiento Tratamiento Menores"
+    default_language: "es"
+    description: "Consentimiento para tratamientos en pacientes menores de edad"
+    category: "pediatrico"
+    consent_template_status: "ACTIVE"
+    signer_config:
+      signers:
+        - type: "guardian"
+          required: true
+          order: 1
+          label: "Padre/Madre/Tutor legal"
+        - type: "professional"
+          required: true
+          order: 2
+          label: "Profesional tratante"
+      requires_witness: false
+      allows_guardian: true
+      min_age_for_self_sign: 18
+
+# ============================================================
+# NOTAS DE MIGRACIÓN
+# ============================================================
+#
+# 1. ORDEN DE CREACIÓN:
+#    - Primero debe existir la Clinic
+#    - Opcionalmente, los Treatment/Category si se usa automation_config
+#
+# 2. VALIDACIONES:
+#    - name debe ser único por clinic_id
+#    - default_language debe ser un código ISO válido
+#    - consent_template_status debe ser DRAFT, ACTIVE o ARCHIVED
+#
+# 3. VERSIONADO:
+#    - Cada cambio importante debe incrementar consent_template_version
+#    - Las versiones anteriores se archivan, no se eliminan
+#    - Los consentimientos firmados mantienen referencia a la versión
+#
+# 4. FIRMANTES:
+#    - signer_config.signers[].type: patient, guardian, professional, witness
+#    - El orden determina la secuencia de firma
+#    - Si requires_witness=true, debe haber un signer type=witness
+#
+# 5. CAMPOS AUTO-GENERADOS (no incluir):
+#    - created_at: timestamp de creación
+#    - updated_at: timestamp de actualización
+#
+# ============================================================
+# RESUMEN DE CAMPOS
+# ============================================================
+#
+# REQUERIDOS (3):
+#   - clinic_id
+#   - name
+#   - default_language
+#
+# CON DEFAULT (3):
+#   - consent_template_status: "DRAFT"
+#   - consent_template_version: "1.0"
+#   - record_status: "ACTIVE"
+#
+# OPCIONALES (6):
+#   - id
+#   - description
+#   - category
+#   - signer_config (JSONB)
+#   - pdf_template_config (JSONB)
+#   - automation_config (JSONB)
+#   - record_metadata (JSONB)
+#
+# ============================================================
+# VALORES DE ENUMS
+# ============================================================
+#
+# consent_template_status:
+#   - DRAFT: Borrador (no disponible para uso)
+#   - ACTIVE: Activo (disponible para crear instancias)
+#   - ARCHIVED: Archivado (solo lectura)
+#
+# record_status:
+#   - ACTIVE: Activo
+#   - INACTIVE: Inactivo
+#   - ARCHIVED: Archivado
+#   - DELETED: Eliminado (soft delete)
+#
+# signer_config.signers[].type:
+#   - patient: El paciente
+#   - guardian: Tutor legal (padre, madre, representante)
+#   - professional: Profesional de la clínica
+#   - witness: Testigo del consentimiento
+#
+# category (ejemplos):
+#   - estetica: Tratamientos estéticos
+#   - medico: Procedimientos médicos
+#   - quirurgico: Intervenciones quirúrgicas
+#   - dental: Tratamientos dentales
+#   - fisioterapia: Fisioterapia/rehabilitación
+#   - pediatrico: Tratamientos pediátricos
+#   - general: Consentimiento general
+#
+# default_language (ISO 639-1):
+#   - es: Español
+#   - en: Inglés
+#   - ca: Catalán
+#   - eu: Euskera
+#   - gl: Gallego
+#   - pt: Portugués
+#   - fr: Francés
+#
+# ============================================================

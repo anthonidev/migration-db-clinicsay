@@ -1,0 +1,272 @@
+# ============================================================
+# TEMPLATE: PATIENT (Nivel 2)
+# ============================================================
+# Ficha maestra de pacientes atendidos por la clínica.
+# Es la fuente de verdad para datos de identificación,
+# demográficos, de contacto y estados operativos.
+#
+# DEPENDENCIAS (deben existir antes):
+#   - Clinic (Level 1) → clinic_id
+#   - Site (Level 2) → site_id (OBLIGATORIO)
+#
+# REFERENCIA: docs/DOMAIN/patients/patient.md
+# ============================================================
+
+patients:
+
+  # ------------------------------------------------------------
+  # EJEMPLO 1: Paciente completo (España)
+  # ------------------------------------------------------------
+  - # ==========================================================
+    # CAMPOS REQUERIDOS (NOT NULL)
+    # ==========================================================
+
+    # REQUERIDO: ID de la clínica
+    clinic_id: "{{clinic_id}}"  # UUID de la clínica
+
+    # REQUERIDO: ID de la sede donde se registra el paciente
+    # El paciente pertenece a una sede específica
+    site_id: "{{site_id}}"  # UUID de la sede
+
+    # REQUERIDO: Nombre del paciente
+    first_name: "María"  # Ej: "María", "Carlos", "Ana"
+
+    # REQUERIDO: Apellidos del paciente
+    last_name: "García López"  # Ej: "García López", "Martínez Ruiz"
+
+    # REQUERIDO: Tipo de documento de identidad
+    # España: DNI, NIE, PASSPORT
+    # Perú: DNI, CE, PASSPORT
+    # México: INE, CURP, PASSPORT
+    # Colombia: CC, CE, PASSPORT
+    id_document_type: "DNI"  # Ej: "DNI", "NIE", "PASSPORT"
+
+    # REQUERIDO: Número de documento
+    id_document_number: "12345678A"  # Ej: "12345678A", "X1234567B"
+
+    # REQUERIDO: Número de documento normalizado (sin espacios, mayúsculas)
+    # Usado para búsquedas y validación de duplicados
+    id_document_number_normalized: "12345678A"  # Sin espacios, mayúsculas
+
+    # REQUERIDO: País emisor del documento (código ISO)
+    id_document_country: "ES"  # Ej: "ES", "PE", "MX", "CO"
+
+    # REQUERIDO: País de nacionalidad (código ISO)
+    nationality_country: "ES"  # Ej: "ES", "PE", "MX", "CO"
+
+    # REQUERIDO: Código de género
+    # Valores válidos:
+    #   - male: Masculino
+    #   - female: Femenino
+    #   - non_binary: No binario
+    #   - unknown: Desconocido
+    #   - not_applicable: No aplica
+    gender_code: "female"  # Ej: "male", "female", "non_binary"
+
+    # ==========================================================
+    # CAMPOS CON DEFAULT (opcionales, tienen valor por defecto)
+    # ==========================================================
+
+    # Estado del registro (ciclo de vida)
+    # Valores: ACTIVE (default), INACTIVE, ARCHIVED, DELETED
+    record_status: "ACTIVE"  # DEFAULT: "ACTIVE"
+
+    # Estado para agenda (si puede agendar citas)
+    # Valores: schedulable (default), blocked
+    scheduling_status: "schedulable"  # DEFAULT: "schedulable"
+
+    # ¿Ha aceptado términos y condiciones?
+    has_accepted_terms: false  # DEFAULT: false
+
+    # ==========================================================
+    # CAMPOS OPCIONALES (nullable)
+    # ==========================================================
+
+    # ID único del paciente
+    # Si es null, se genera automáticamente (ULID)
+    id: null  # Ej: "01HXYZ123456789ABCDEF"
+
+    # Fecha de nacimiento (formato ISO)
+    birthday: "1985-03-15"  # Ej: "1985-03-15", null si desconocido
+
+    # Dirección del paciente (objeto JSON)
+    address:
+      country: "ES"
+      region: "Comunidad Valenciana"
+      city: "Valencia"
+      district: "Eixample"
+      postal_code: "46004"
+      street_line1: "Calle Colón 45"
+      street_line2: "3º Puerta 2"
+
+    # Teléfonos del paciente (array JSON)
+    # Se recomienda usar tabla patient_phone en su lugar
+    phones:
+      - number: "+34 612 345 678"
+        type: "mobile"
+        is_primary: true
+      - number: "+34 963 123 456"
+        type: "home"
+        is_primary: false
+
+    # Emails del paciente (array JSON)
+    # Se recomienda usar tabla patient_email en su lugar
+    emails:
+      - email: "maria.garcia@email.com"
+        is_primary: true
+
+    # Canal de adquisición (cómo llegó el paciente)
+    # Ejemplos: "web", "referido", "redes_sociales", "publicidad"
+    acquisition_channel: "web"  # Ej: "web", "referido", "walk-in"
+
+    # Notas administrativas internas
+    administrative_notes: null  # Ej: "Paciente VIP", "Requiere traductor"
+
+    # Metadata del registro (ciclo de vida)
+    record_metadata: null  # Ej: {"archivedAt": "2024-01-15T10:00:00Z"}
+
+    # ==========================================================
+    # CAMPOS DE ACEPTACIÓN DE TÉRMINOS (opcionales)
+    # ==========================================================
+    # Solo rellenar si has_accepted_terms = true
+
+    # Versión de términos aceptados
+    accepted_terms_version: null  # Ej: "v2.1"
+
+    # Fecha de aceptación
+    accepted_terms_at: null  # Ej: "2024-01-15T10:30:00Z"
+
+    # Fuente de aceptación
+    accepted_terms_source: null  # Ej: "web_form", "app_mobile", "paper"
+
+    # IP desde donde aceptó
+    accepted_terms_ip: null  # Ej: "192.168.1.100"
+
+    # User agent del navegador
+    accepted_terms_user_agent: null  # Ej: "Mozilla/5.0..."
+
+    # ==========================================================
+    # CAMPOS DE AUDITORÍA (opcionales)
+    # ==========================================================
+
+    # Usuario que creó el registro
+    created_by_user_id: null  # UUID del usuario
+
+    # Usuario que actualizó el registro
+    updated_by_user_id: null  # UUID del usuario
+
+  # ------------------------------------------------------------
+  # EJEMPLO 2: Paciente mínimo (solo campos requeridos)
+  # ------------------------------------------------------------
+  - clinic_id: "{{clinic_id}}"
+    site_id: "{{site_id}}"
+    first_name: "Carlos"
+    last_name: "Martínez Ruiz"
+    id_document_type: "DNI"
+    id_document_number: "87654321B"
+    id_document_number_normalized: "87654321B"
+    id_document_country: "ES"
+    nationality_country: "ES"
+    gender_code: "male"
+
+  # ------------------------------------------------------------
+  # EJEMPLO 3: Paciente extranjero
+  # ------------------------------------------------------------
+  - clinic_id: "{{clinic_id}}"
+    site_id: "{{site_id}}"
+    first_name: "John"
+    last_name: "Smith"
+    id_document_type: "PASSPORT"
+    id_document_number: "AB1234567"
+    id_document_number_normalized: "AB1234567"
+    id_document_country: "GB"  # Reino Unido
+    nationality_country: "GB"
+    gender_code: "male"
+    birthday: "1978-07-22"
+    acquisition_channel: "referido"
+
+# ============================================================
+# NOTAS DE MIGRACIÓN
+# ============================================================
+#
+# 1. ORDEN DE CREACIÓN:
+#    - Primero debe existir el Site
+#    - clinic_id se obtiene del Site
+#
+# 2. VALIDACIONES:
+#    - id_document_number_normalized debe ser único por clinic
+#    - site_id debe existir y pertenecer a la clinic_id
+#    - Si has_accepted_terms=true, accepted_terms_version y
+#      accepted_terms_at deben tener valor
+#
+# 3. DUPLICADOS:
+#    - Verificar por id_document_number_normalized + clinic_id
+#    - O usar metadata.legacy_id para mapeo
+#
+# 4. CONTACTOS:
+#    - phones y emails son campos JSONB en patient
+#    - También existen tablas separadas patient_phone y patient_email
+#    - Para migraciones grandes, usar las tablas separadas
+#
+# 5. CAMPOS AUTO-GENERADOS (no incluir):
+#    - created_at: timestamp de creación
+#    - updated_at: timestamp de actualización
+#
+# ============================================================
+# RESUMEN DE CAMPOS
+# ============================================================
+#
+# REQUERIDOS (10):
+#   - clinic_id, site_id
+#   - first_name, last_name
+#   - id_document_type, id_document_number, id_document_number_normalized
+#   - id_document_country, nationality_country
+#   - gender_code
+#
+# CON DEFAULT (3):
+#   - record_status: "ACTIVE"
+#   - scheduling_status: "schedulable"
+#   - has_accepted_terms: false
+#
+# OPCIONALES (14):
+#   - id, birthday, address, phones, emails
+#   - acquisition_channel, administrative_notes, record_metadata
+#   - accepted_terms_version, accepted_terms_at, accepted_terms_source
+#   - accepted_terms_ip, accepted_terms_user_agent
+#   - created_by_user_id, updated_by_user_id
+#
+# ============================================================
+# VALORES DE ENUMS
+# ============================================================
+#
+# gender_code:
+#   - male: Masculino
+#   - female: Femenino
+#   - non_binary: No binario
+#   - unknown: Desconocido
+#   - not_applicable: No aplica
+#
+# id_document_type (España):
+#   - DNI: Documento Nacional de Identidad
+#   - NIE: Número de Identidad de Extranjero
+#   - PASSPORT: Pasaporte
+#
+# record_status:
+#   - ACTIVE: Activo
+#   - INACTIVE: Inactivo
+#   - ARCHIVED: Archivado
+#   - DELETED: Eliminado (soft delete)
+#
+# scheduling_status:
+#   - schedulable: Puede agendar citas
+#   - blocked: Bloqueado para agenda
+#
+# acquisition_channel (ejemplos):
+#   - web: Sitio web
+#   - referido: Referido por otro paciente
+#   - redes_sociales: Redes sociales
+#   - publicidad: Publicidad
+#   - walk-in: Llegó directamente
+#   - convenio: Convenio empresarial
+#
+# ============================================================

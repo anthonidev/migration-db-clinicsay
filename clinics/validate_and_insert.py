@@ -185,6 +185,21 @@ def print_config(config: dict):
         console.print(f"      {district + ', ' if district else ''}{addr.get('city', '-')}, {addr.get('region', '-')}")
         console.print(f"      {addr.get('postal_code') or ''} {addr.get('country', '-')}")
 
+        # Billing Lines de la sede
+        billing_lines = site.get("billing_lines", [])
+        if billing_lines:
+            console.print("    [dim]Líneas de facturación:[/dim]")
+            for bl in billing_lines:
+                default_mark = " [green](default)[/green]" if bl.get("is_default") else ""
+                console.print(f"      • {bl.get('name', '-')}{default_mark}")
+
+    # Payment Methods
+    payment_methods = config.get("payment_methods", [])
+    if payment_methods:
+        print_subheader(f"5. PAYMENT METHODS ({len(payment_methods)} método(s))")
+        for pm in payment_methods:
+            console.print(f"  [cyan]•[/cyan] {pm.get('name', '-')} ({pm.get('payment_method_type', '-')})")
+
 
 def generate_sql(config: dict) -> str:
     """Genera el SQL de inserción para la configuración."""
@@ -272,8 +287,11 @@ INSERT INTO clinic (
     '{now}'
 );""")
 
+    site_ids = []  # Para guardar los IDs generados
+
     for i, site in enumerate(sites):
         site_id = str(uuid.uuid4())
+        site_ids.append((site_id, site))  # Guardar para billing_lines
         addr = site.get("address", {})
 
         address_json = json.dumps({
@@ -289,18 +307,68 @@ INSERT INTO clinic (
         sql_parts.append(f"""
 -- SITE {i + 1}: {site.get("name", "")}
 INSERT INTO site (
-    id, clinic_id, name, phone, email,
-    address, timezone, site_status, record_status,
-    created_at, updated_at
+    id, clinic_id, name, address, timezone,
+    site_status, record_status, created_at, updated_at
 ) VALUES (
     '{site_id}',
     '{clinic_id}',
     '{escape_sql(site.get("name", ""))}',
-    {sql_str(site.get("phone"))},
-    {sql_str(site.get("email"))},
     '{escape_sql(address_json)}'::jsonb,
     {sql_str(site.get("timezone"))},
     '{site.get("site_status", "ACTIVE")}',
+    'ACTIVE',
+    '{now}',
+    '{now}'
+);""")
+
+    # Site Billing Lines
+    for site_id, site in site_ids:
+        billing_lines = site.get("billing_lines", [])
+        # Si no hay billing_lines configuradas, crear una por defecto
+        if not billing_lines:
+            billing_lines = [{"name": "Línea Principal", "is_default": True}]
+
+        for j, bl in enumerate(billing_lines):
+            bl_id = str(uuid.uuid4())
+            sql_parts.append(f"""
+-- BILLING LINE: {site.get("name", "")} - {bl.get("name", "")}
+INSERT INTO site_billing_line (
+    id, site_id, company_id, name, description,
+    is_default, record_status, created_at, updated_at
+) VALUES (
+    '{bl_id}',
+    '{site_id}',
+    '{company_id}',
+    '{escape_sql(bl.get("name", "Línea Principal"))}',
+    {sql_str(bl.get("description"))},
+    {str(bl.get("is_default", j == 0)).lower()},
+    'ACTIVE',
+    '{now}',
+    '{now}'
+);""")
+
+    # Payment Methods
+    payment_methods = config.get("payment_methods", [])
+    for i, pm in enumerate(payment_methods):
+        pm_id = str(uuid.uuid4())
+
+        sql_parts.append(f"""
+-- PAYMENT METHOD {i + 1}: {pm.get("name", "")}
+INSERT INTO payment_method (
+    id, clinic_id, name, payment_method_type,
+    requires_reference, allows_refunds, is_online_method,
+    sort_order, payment_method_status, record_status,
+    created_at, updated_at
+) VALUES (
+    '{pm_id}',
+    '{clinic_id}',
+    '{escape_sql(pm.get("name", ""))}',
+    '{pm.get("payment_method_type", "OTHER")}',
+    {str(pm.get("requires_reference", False)).lower()},
+    {str(pm.get("allows_refunds", True)).lower()},
+    {str(pm.get("is_online_method", False)).lower()},
+    {pm.get("sort_order") or "NULL"},
+    'ACTIVE',
     'ACTIVE',
     '{now}',
     '{now}'

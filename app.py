@@ -21,9 +21,12 @@ def show_menu():
         title="Menú Principal",
         options=[
             {"key": "1", "label": "Extraer schema de la base de datos", "group": "Schema"},
-            {"key": "2", "label": "Inicializar nueva clínica", "group": "Clínicas"},
-            {"key": "3", "label": "Validar e insertar configuración", "group": "Clínicas"},
-            {"key": "4", "label": "Sincronizar documentación", "group": "Documentación"},
+            {"key": "2", "label": "Limpiar base de datos", "group": "Schema"},
+            {"key": "3", "label": "Inicializar nueva clínica", "group": "Clínicas"},
+            {"key": "4", "label": "Validar e insertar configuración", "group": "Clínicas"},
+            {"key": "5", "label": "Generar queries de clínica", "group": "Clínicas"},
+            {"key": "6", "label": "Ejecutar comandos de clínica", "group": "Migración"},
+            {"key": "7", "label": "Sincronizar documentación", "group": "Documentación"},
             {"key": "0", "label": "Salir", "group": "Sistema"},
         ]
     )
@@ -37,6 +40,19 @@ def extract_schema_option():
     try:
         output_path = extract_schema()
         success(f"Schema guardado en: {output_path}")
+    except Exception as e:
+        error(f"{e}")
+
+
+def clean_database_option():
+    """Opcion para limpiar la base de datos."""
+    from schema.clean_database import clean_database
+
+    try:
+        clean_database()
+    except KeyboardInterrupt:
+        console.print()
+        info("Operación cancelada")
     except Exception as e:
         error(f"{e}")
 
@@ -60,6 +76,32 @@ def validate_insert_option():
 
     try:
         validate_and_insert()
+    except KeyboardInterrupt:
+        console.print()
+        info("Operación cancelada")
+    except Exception as e:
+        error(f"{e}")
+
+
+def generate_queries_option():
+    """Opcion para generar queries de una clínica."""
+    from clinics.generate_queries import generate_queries
+
+    try:
+        generate_queries()
+    except KeyboardInterrupt:
+        console.print()
+        info("Operación cancelada")
+    except Exception as e:
+        error(f"{e}")
+
+
+def run_commands_option():
+    """Opcion para ejecutar comandos de una clínica."""
+    from clinics.run_commands import run_clinic_commands
+
+    try:
+        run_clinic_commands()
     except KeyboardInterrupt:
         console.print()
         info("Operación cancelada")
@@ -96,12 +138,20 @@ def main():
             extract_schema_option()
             ask("Presiona Enter para continuar")
         elif option == "2":
-            init_clinic_option()
+            clean_database_option()
             ask("Presiona Enter para continuar")
         elif option == "3":
-            validate_insert_option()
+            init_clinic_option()
             ask("Presiona Enter para continuar")
         elif option == "4":
+            validate_insert_option()
+            ask("Presiona Enter para continuar")
+        elif option == "5":
+            generate_queries_option()
+            ask("Presiona Enter para continuar")
+        elif option == "6":
+            run_commands_option()
+        elif option == "7":
             sync_docs_option()
             ask("Presiona Enter para continuar")
         elif option == "0":
