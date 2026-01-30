@@ -220,6 +220,27 @@ payment_methods:
     is_online_method: false
     sort_order: 3
 
+# ------------------------------------------------------------
+# PASO 6: MIGRATION (Usuario de Migración)
+# ------------------------------------------------------------
+# Configuración del usuario de sistema para la migración.
+# Este usuario se asigna como creador de registros migrados.
+
+migration:
+  # REQUERIDO: Email del usuario de migración
+  # Se recomienda usar un email del dominio de la clínica
+  user_email: ""                      # Ej: "migracion@clinica.com"
+
+  # Opcional: Nombre del usuario
+  user_name: "Sistema"                # Ej: "Sistema"
+
+  # Opcional: Apellido del usuario
+  user_last_name: "Migración"         # Ej: "Migración"
+
+  # Opcional: Contraseña para Cognito (si se desea crear usuario real)
+  # Requisitos: mínimo 8 caracteres, mayúscula, minúscula, número, símbolo
+  cognito_password: ""                # Ej: "MigraCion2026!"
+
 # ============================================================
 # EJEMPLO COMPLETO: CLÍNICA "SALUD TOTAL" EN ESPAÑA
 # ============================================================
@@ -302,6 +323,12 @@ payment_methods:
 #     payment_method_type: "BANK_TRANSFER"
 #     requires_reference: true
 #     sort_order: 3
+#
+# migration:
+#   user_email: "migracion@saludtotal.es"
+#   user_name: "Sistema"
+#   user_last_name: "Migración"
+#   cognito_password: "MigraCion2026!"
 # ============================================================
 '''
 

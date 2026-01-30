@@ -1,0 +1,243 @@
+# =============================================================================
+# CATALOG TEMPLATE - Servicios, Categorías, Subcategorías y Tratamientos
+# =============================================================================
+# Este template define la estructura completa del catálogo clínico.
+# El orden de inserción debe ser: Services → Categories → Subcategories → Treatments
+#
+# Jerarquía:
+#   Clinic
+#   └── Service (línea de negocio: Odontología, Estética, etc.)
+#       └── Category (grupo dentro del servicio)
+#           └── Subcategory (opcional, máximo 2 niveles)
+#               └── Treatment (tratamiento específico)
+#
+# IMPORTANTE: Los tratamientos pertenecen a un Site específico, no a la Clinic.
+# =============================================================================
+
+catalog:
+  # ---------------------------------------------------------------------------
+  # SERVICES - Líneas de negocio de la clínica
+  # ---------------------------------------------------------------------------
+  # Campos requeridos: name
+  # Campos opcionales: description, color, icon, sort_order, tag_ids, is_active, metadata
+  # ---------------------------------------------------------------------------
+  services:
+    - name: "Estética Corporal"
+      description: "Tratamientos de estética corporal y facial"
+      color: "#E91E63"
+      icon: "spa"
+      sort_order: 1
+      is_active: true
+      metadata:
+        legacy_id: "SRV001"
+
+      # -----------------------------------------------------------------------
+      # CATEGORIES - Grupos dentro del servicio
+      # -----------------------------------------------------------------------
+      # Campos requeridos: name
+      # Campos opcionales: description, color, icon, sort_order, tag_ids, is_active, metadata
+      # -----------------------------------------------------------------------
+      categories:
+        - name: "Depilación Láser"
+          description: "Tratamientos de depilación láser definitiva"
+          color: "#FF5722"
+          icon: "flash_on"
+          sort_order: 1
+          is_active: true
+          metadata:
+            legacy_id: "CAT001"
+
+          # -------------------------------------------------------------------
+          # SUBCATEGORIES - Subcategorías (opcional, máximo 1 nivel de anidación)
+          # -------------------------------------------------------------------
+          subcategories:
+            - name: "Depilación Facial"
+              sort_order: 1
+              metadata:
+                legacy_id: "SUBCAT001"
+
+            - name: "Depilación Corporal"
+              sort_order: 2
+              metadata:
+                legacy_id: "SUBCAT002"
+
+          # -------------------------------------------------------------------
+          # TREATMENTS - Tratamientos específicos
+          # -------------------------------------------------------------------
+          # Campos requeridos: name, type
+          # Campos opcionales: description, code, color, duration_default_minutes,
+          #                    is_group, max_group_size, price_without_tax, tax_rate,
+          #                    price_with_tax, currency, visibility, scheduling_policy_ids,
+          #                    tag_ids, is_active, metadata
+          #
+          # type: SINGLE_SESSION | MULTI_SESSION | PROGRAM | GROUP
+          # visibility: INTERNAL_ONLY | PATIENT_APP | HIDDEN
+          #
+          # subcategory_name: (opcional) nombre de la subcategoría a la que pertenece
+          # -------------------------------------------------------------------
+          treatments:
+            - name: "Depilación Láser Axilas"
+              description: "Sesión de depilación láser en zona axilar"
+              code: "DEP-AXI-001"
+              color: "#FF5722"
+              type: "SINGLE_SESSION"
+              duration_default_minutes: 15
+              is_group: false
+              price_without_tax: 30.00
+              tax_rate: 21.00
+              price_with_tax: 36.30
+              currency: "EUR"
+              visibility: "PATIENT_APP"
+              is_active: true
+              subcategory_name: "Depilación Corporal"
+              metadata:
+                legacy_id: "TRT001"
+
+              # Standard sessions (protocolo del tratamiento)
+              standard_sessions:
+                - name: "Sesión única"
+                  order: 1
+                  duration_minutes: 15
+                  description: "Sesión estándar de depilación láser"
+                  # room_ids: [] # Opcional: IDs de salas permitidas
+                  # equipment_ids: [] # Opcional: IDs de equipos requeridos
+
+            - name: "Depilación Láser Piernas Completas"
+              description: "Sesión de depilación láser en piernas completas"
+              code: "DEP-PIE-001"
+              color: "#FF5722"
+              type: "SINGLE_SESSION"
+              duration_default_minutes: 45
+              is_group: false
+              price_without_tax: 120.00
+              tax_rate: 21.00
+              price_with_tax: 145.20
+              currency: "EUR"
+              visibility: "PATIENT_APP"
+              is_active: true
+              subcategory_name: "Depilación Corporal"
+              metadata:
+                legacy_id: "TRT002"
+              standard_sessions:
+                - name: "Sesión única"
+                  order: 1
+                  duration_minutes: 45
+
+            - name: "Depilación Láser Labio Superior"
+              description: "Sesión de depilación láser en labio superior"
+              code: "DEP-LAB-001"
+              type: "SINGLE_SESSION"
+              duration_default_minutes: 10
+              price_without_tax: 15.00
+              tax_rate: 21.00
+              price_with_tax: 18.15
+              currency: "EUR"
+              visibility: "PATIENT_APP"
+              is_active: true
+              subcategory_name: "Depilación Facial"
+              metadata:
+                legacy_id: "TRT003"
+              standard_sessions:
+                - name: "Sesión única"
+                  order: 1
+                  duration_minutes: 10
+
+        - name: "Tratamientos Faciales"
+          description: "Tratamientos de estética facial"
+          color: "#9C27B0"
+          icon: "face"
+          sort_order: 2
+          is_active: true
+          metadata:
+            legacy_id: "CAT002"
+
+          treatments:
+            - name: "Limpieza Facial Profunda"
+              description: "Limpieza facial con extracción y mascarilla"
+              code: "FAC-LIM-001"
+              type: "SINGLE_SESSION"
+              duration_default_minutes: 60
+              price_without_tax: 50.00
+              tax_rate: 21.00
+              price_with_tax: 60.50
+              currency: "EUR"
+              visibility: "PATIENT_APP"
+              is_active: true
+              metadata:
+                legacy_id: "TRT004"
+              standard_sessions:
+                - name: "Sesión completa"
+                  order: 1
+                  duration_minutes: 60
+
+    # -------------------------------------------------------------------------
+    # Ejemplo de otro servicio
+    # -------------------------------------------------------------------------
+    - name: "Medicina Estética"
+      description: "Tratamientos de medicina estética avanzada"
+      color: "#3F51B5"
+      icon: "medical_services"
+      sort_order: 2
+      is_active: true
+      metadata:
+        legacy_id: "SRV002"
+
+      categories:
+        - name: "Inyectables"
+          description: "Tratamientos con inyectables"
+          color: "#2196F3"
+          sort_order: 1
+          metadata:
+            legacy_id: "CAT003"
+
+          subcategories:
+            - name: "Toxina Botulínica"
+              sort_order: 1
+            - name: "Ácido Hialurónico"
+              sort_order: 2
+
+          treatments:
+            - name: "Botox Entrecejo"
+              description: "Aplicación de toxina botulínica en zona entrecejo"
+              code: "BOT-ENT-001"
+              type: "SINGLE_SESSION"
+              duration_default_minutes: 30
+              price_without_tax: 200.00
+              tax_rate: 21.00
+              price_with_tax: 242.00
+              currency: "EUR"
+              visibility: "INTERNAL_ONLY"
+              is_active: true
+              subcategory_name: "Toxina Botulínica"
+              metadata:
+                legacy_id: "TRT005"
+              standard_sessions:
+                - name: "Aplicación"
+                  order: 1
+                  duration_minutes: 30
+
+# =============================================================================
+# NOTAS DE MIGRACIÓN
+# =============================================================================
+#
+# 1. Los IDs se generan automáticamente (UUID) durante la inserción
+#
+# 2. Orden de inserción:
+#    a) Services (solo necesita clinic_id)
+#    b) Categories (necesita clinic_id + service_id)
+#    c) Subcategories (necesita clinic_id + service_id + parent_id)
+#    d) Treatments (necesita site_id + service_id + category_id + subcategory_id opcional)
+#
+# 3. El script de inserción debe:
+#    - Crear los services y guardar el mapeo name → id
+#    - Crear las categories usando el service_id del padre
+#    - Crear las subcategories usando el category_id como parent_id
+#    - Crear los treatments usando los IDs correspondientes
+#
+# 4. Para treatments multi-sesión, usar type: "MULTI_SESSION" y definir
+#    múltiples standard_sessions con order incrementales
+#
+# 5. Los campos opcionales room_ids y equipment_ids en standard_sessions
+#    deben referenciar Room y Equipment existentes
+#
+# =============================================================================
