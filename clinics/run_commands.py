@@ -113,6 +113,9 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "extract_catalog": "catalog.json",
             "extract_room": "rooms.json",
             "extract_rooms": "rooms.json",
+            "extract_availability": "availability.json",
+            "extract_commission": "commissions.json",
+            "extract_commissions": "commissions.json",
             "extract_care_plan": "care_plans.json",
             "extract_care_plans": "care_plans.json",
             "extract_schedule": "schedules.json",
@@ -125,6 +128,7 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "extract_billing_historical": "billing_historical.json",
             "extract_task": "tasks.json",
             "extract_tasks": "tasks.json",
+            "extract_treatment_tasks": "treatment_tasks.json",
             "extract_cash": "cash.json",
         }
 
@@ -147,6 +151,9 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "insert_catalog": "insert_catalog_2*.log",
             "insert_room": "insert_room_2*.log",
             "insert_rooms": "insert_room_2*.log",
+            "insert_availability": "insert_availability_2*.log",
+            "insert_commission": "insert_commission_2*.log",
+            "insert_commissions": "insert_commission_2*.log",
             "insert_care_plan": "insert_care_plan_2*.log",
             "insert_care_plans": "insert_care_plan_2*.log",
             "insert_schedule": "insert_schedule_2*.log",
@@ -159,9 +166,14 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "insert_billing_historical": "insert_billing_historical_2*.log",
             "insert_task": "insert_task_2*.log",
             "insert_tasks": "insert_task_2*.log",
+            "insert_treatment_tasks": "insert_treatment_tasks_2*.log",
             "insert_cash": "insert_cash_2*.log",
             "create_migration_user": "create_migration_user_2*.log",
             "update_treatment_sessions": "update_treatment_sessions_2*.log",
+            # Pase a producción
+            "migrate_to_production": "migrate_to_production_2*.log",
+            "create_cognito_user_prd": "create_cognito_user_prd_2*.log",
+            "upload_consent_files_prd": "upload_consent_files_prd_2*.log",
         }
 
         log_pattern = log_patterns.get(function_name)

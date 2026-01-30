@@ -1,8 +1,9 @@
 import os
 import sys
 import json
-import uuid
 from datetime import datetime
+
+from ulid import ULID
 
 import yaml
 
@@ -205,9 +206,9 @@ def generate_sql(config: dict) -> str:
     """Genera el SQL de inserción para la configuración."""
     now = datetime.utcnow().isoformat()
 
-    org_id = str(uuid.uuid4())
-    company_id = str(uuid.uuid4())
-    clinic_id = str(uuid.uuid4())
+    org_id = str(ULID()).lower()
+    company_id = str(ULID()).lower()
+    clinic_id = str(ULID()).lower()
 
     org = config["organization"]
     comp = config["company"]
@@ -290,7 +291,7 @@ INSERT INTO clinic (
     site_ids = []  # Para guardar los IDs generados
 
     for i, site in enumerate(sites):
-        site_id = str(uuid.uuid4())
+        site_id = str(ULID()).lower()
         site_ids.append((site_id, site))  # Guardar para billing_lines
         addr = site.get("address", {})
 
@@ -329,7 +330,7 @@ INSERT INTO site (
             billing_lines = [{"name": "Línea Principal", "is_default": True}]
 
         for j, bl in enumerate(billing_lines):
-            bl_id = str(uuid.uuid4())
+            bl_id = str(ULID()).lower()
             sql_parts.append(f"""
 -- BILLING LINE: {site.get("name", "")} - {bl.get("name", "")}
 INSERT INTO site_billing_line (
@@ -350,7 +351,7 @@ INSERT INTO site_billing_line (
     # Payment Methods
     payment_methods = config.get("payment_methods", [])
     for i, pm in enumerate(payment_methods):
-        pm_id = str(uuid.uuid4())
+        pm_id = str(ULID()).lower()
 
         sql_parts.append(f"""
 -- PAYMENT METHOD {i + 1}: {pm.get("name", "")}
