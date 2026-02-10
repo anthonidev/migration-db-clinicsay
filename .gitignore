@@ -4,7 +4,6 @@
 docs/DOMAIN/
 schema/clinicsay_schema.sql
 # Clínicas (datos sensibles de cada migración)
-clinics/*/
 
 # Mantener estructura base
 !clinics/__init__.py

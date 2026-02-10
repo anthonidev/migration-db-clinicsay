@@ -1,0 +1,43 @@
+version: '3'
+
+tasks:
+  up:
+    desc: "Levanta la base de datos PostgreSQL"
+    cmds:
+      - docker-compose up -d
+    
+  down:
+    desc: "Detiene la base de datos PostgreSQL"
+    cmds:
+      - docker-compose down
+  
+  restart:
+    desc: "Reinicia la base de datos PostgreSQL"
+    cmds:
+      - docker-compose restart
+  
+  logs:
+    desc: "Muestra los logs de la base de datos"
+    cmds:
+      - docker-compose logs -f postgres
+  
+  status:
+    desc: "Muestra el estado de los contenedores"
+    cmds:
+      - docker-compose ps
+  
+  clean:
+    desc: "Detiene y elimina contenedores y volúmenes"
+    cmds:
+      - docker-compose down -v
+    prompt: "¿Estás seguro de eliminar los volúmenes? Esto borrará todos los datos"
+  
+  psql:
+    desc: "Conecta a la base de datos PostgreSQL usando psql"
+    cmds:
+      - docker exec -it clinicsay-postgres-backup psql -U clinicsay-backup -d clinicsay-backup
+  
+  health:
+    desc: "Verifica el estado de salud de la base de datos"
+    cmds:
+      - docker exec clinicsay-postgres-backup pg_isready -U clinicsay-backup

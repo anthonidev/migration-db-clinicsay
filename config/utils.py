@@ -14,6 +14,6 @@ def generate_id() -> str:
     - Componentes: timestamp (48 bits) + random (80 bits)
 
     Returns:
-        str: ULID en formato string lowercase
+        str: ULID en formato string UPPERCASE
     """
-    return str(ULID()).lower()
+    return str(ULID()).upper()

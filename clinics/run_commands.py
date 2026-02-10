@@ -129,6 +129,7 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "extract_task": "tasks.json",
             "extract_tasks": "tasks.json",
             "extract_treatment_tasks": "treatment_tasks.json",
+            "extract_treatment_actions": "treatment_actions.json",
             "extract_cash": "cash.json",
         }
 
@@ -167,6 +168,7 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "insert_task": "insert_task_2*.log",
             "insert_tasks": "insert_task_2*.log",
             "insert_treatment_tasks": "insert_treatment_tasks_2*.log",
+            "insert_treatment_actions": "insert_treatment_actions_2*.log",
             "insert_cash": "insert_cash_2*.log",
             "create_migration_user": "create_migration_user_2*.log",
             "update_treatment_sessions": "update_treatment_sessions_2*.log",
@@ -205,6 +207,7 @@ def run_script(clinic_folder: str, command: dict) -> bool:
     """Ejecuta un script de comando."""
     script_path = command.get("script", "")
     function_name = command.get("function")
+    is_global = command.get("type") == "global"
 
     # Caso especial: generar queries
     if script_path == "__generate_queries__":
@@ -213,7 +216,10 @@ def run_script(clinic_folder: str, command: dict) -> bool:
         return True
 
     # Construir path completo
-    full_path = os.path.join(CLINICS_DIR, clinic_folder, script_path)
+    if is_global:
+        full_path = os.path.join(CLINICS_DIR, "global_commands", script_path)
+    else:
+        full_path = os.path.join(CLINICS_DIR, clinic_folder, script_path)
 
     if not os.path.exists(full_path):
         error(f"Script no encontrado: {full_path}")
@@ -229,7 +235,10 @@ def run_script(clinic_folder: str, command: dict) -> bool:
         # Ejecutar función si se especifica, sino ejecutar como script
         if function_name and hasattr(module, function_name):
             func = getattr(module, function_name)
-            func()
+            if is_global:
+                func(clinic_folder)
+            else:
+                func()
         else:
             # El script ya se ejecutó al cargarlo si tiene if __name__ == "__main__"
             pass

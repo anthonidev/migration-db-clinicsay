@@ -19,6 +19,61 @@ from ui import (
 
 CLINICS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+TEMPLATE_COMMANDS_YAML = '''# ============================================================
+# COMANDOS DE MIGRACIÓN - {clinic_name}
+# ============================================================
+# Orden optimizado para respetar dependencias entre tablas.
+# Ejecutar en orden numérico para evitar errores.
+# ============================================================
+
+commands:
+
+  # ----------------------------------------------------------
+  # 1. CONFIGURACIÓN (ejecutar primero)
+  # ----------------------------------------------------------
+  - name: "Generar queries.py"
+    category: "1. Configuración"
+    script: "__generate_queries__"
+    description: "Genera archivo queries.py con IDs de la clínica"
+
+  - name: "Crear usuario de migración"
+    category: "1. Configuración"
+    type: "global"
+    script: "create_migration_user.py"
+    function: "create_migration_user"
+    description: "Crea usuario sistema para operaciones de migración"
+
+  # ----------------------------------------------------------
+  # 18. UTILIDADES (excluidas del autopiloto)
+  # ----------------------------------------------------------
+  - name: "Crear usuario Cognito (DEV)"
+    category: "18. Utilidades"
+    type: "global"
+    script: "create_cognito_user.py"
+    function: "create_cognito_user_main"
+    description: "Crea usuario Cognito usando DATABASE_URL (desarrollo)"
+    skip_autopilot: true
+    skip_status: true
+
+  - name: "Limpiar datos migrados (BD)"
+    category: "18. Utilidades"
+    type: "global"
+    script: "clean_migrated_data.py"
+    function: "clean_all_clinic_data"
+    description: "Borra datos de la clínica (requiere confirmación)"
+    skip_autopilot: true
+    skip_status: true
+
+  - name: "Limpiar archivos (logs + JSON)"
+    category: "18. Utilidades"
+    type: "global"
+    script: "clean_files.py"
+    function: "clean_files"
+    description: "Borra logs y JSONs generados (con opciones)"
+    skip_autopilot: true
+    skip_status: true
+'''
+
 TEMPLATE_YAML = '''# ============================================================
 # CONFIGURACIÓN INICIAL DE CLÍNICA
 # ============================================================
@@ -349,13 +404,26 @@ def create_clinic_folder(name: str) -> str:
     # Crear estructura de carpetas
     os.makedirs(clinic_path)
     os.makedirs(os.path.join(clinic_path, "fuente"))
+    os.makedirs(os.path.join(clinic_path, "sources"))
     os.makedirs(os.path.join(clinic_path, "scripts"))
     os.makedirs(os.path.join(clinic_path, "logs"))
+    os.makedirs(os.path.join(clinic_path, "processed"))
+    os.makedirs(os.path.join(clinic_path, "migrations"))
+
+    # Crear __init__.py
+    init_path = os.path.join(clinic_path, "__init__.py")
+    with open(init_path, "w", encoding="utf-8") as f:
+        f.write("")
 
     # Crear archivo de configuración
     config_path = os.path.join(clinic_path, "config.yaml")
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(TEMPLATE_YAML)
+
+    # Crear commands.yaml
+    commands_path = os.path.join(clinic_path, "commands.yaml")
+    with open(commands_path, "w", encoding="utf-8") as f:
+        f.write(TEMPLATE_COMMANDS_YAML.format(clinic_name=name))
 
     return config_path
 
@@ -401,9 +469,14 @@ def init_clinic():
 
     structure = {
         "config.yaml": "[yellow]← Complete este archivo[/yellow]",
+        "commands.yaml": "Comandos de migración",
+        "__init__.py": "Package init",
         "fuente/": "Archivos de datos origen",
+        "sources/": "Archivos fuente adicionales",
         "scripts/": "Scripts SQL generados",
+        "migrations/": "Scripts de migración",
         "logs/": "Logs de ejecución",
+        "processed/": "JSONs procesados",
     }
 
     print_tree(f"clinics/{name}", structure)

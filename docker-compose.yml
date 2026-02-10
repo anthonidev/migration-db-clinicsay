@@ -1,0 +1,38 @@
+services:
+  postgres-backup:
+    image: postgres:17-alpine
+    container_name: clinicsay-postgres-backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clinicsay-backup
+      POSTGRES_PASSWORD: clinicsay-backup
+      POSTGRES_DB: clinicsay-backup
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-backup-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinicsay-backup"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  postgres:
+    image: postgres:17-alpine
+    container_name: clinicsay-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clinicsay
+      POSTGRES_PASSWORD: clinicsay
+      POSTGRES_DB: clinicsay
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinicsay"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  postgres-backup-data:
+  postgres-data:
