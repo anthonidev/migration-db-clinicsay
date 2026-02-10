@@ -97,10 +97,10 @@ organization:
   legal_name: ""                        # Ej: "Grupo Salud Total S.L."
 
   # REQUERIDO: Código ISO del país principal
-  home_country: ""                      # Ej: "ES" (España), "PE" (Perú), "MX" (México)
+  country: ""                           # Ej: "ES" (España), "PE" (Perú), "MX" (México)
 
   # REQUERIDO: Zona horaria principal
-  home_timezone: ""                     # Ej: "Europe/Madrid", "America/Lima"
+  timezone: ""                          # Ej: "Europe/Madrid", "America/Lima"
 
   # Opcional: Tipo de plan SaaS
   plan_type: "professional"             # basic | professional | enterprise
@@ -303,8 +303,8 @@ migration:
 # organization:
 #   name: "Grupo Salud Total"
 #   legal_name: "Grupo Salud Total S.L."
-#   home_country: "ES"
-#   home_timezone: "Europe/Madrid"
+#   country: "ES"
+#   timezone: "Europe/Madrid"
 #   plan_type: "professional"
 #   organization_status: "ONBOARDING"
 #

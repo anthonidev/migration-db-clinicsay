@@ -169,9 +169,9 @@ def get_clinic() -> dict | None:
 def get_organization() -> dict | None:
     """Obtiene los datos de la organización."""
     query = """
-        SELECT id, name, legal_name, home_country, home_timezone,
+        SELECT id, name, legal_name, country, timezone,
                plan_type, organization_status, record_status,
-               created_at, updated_at
+               record_metadata, created_at, updated_at
         FROM organization
         WHERE id = %s
     """
@@ -199,7 +199,7 @@ def get_sites(active_only: bool = True) -> list[dict]:
     """Obtiene todos los sites de esta clínica."""
     query = """
         SELECT id, clinic_id, name, address, timezone,
-               site_status, record_status, metadata,
+               site_status, record_status, record_metadata,
                created_at, updated_at
         FROM site
         WHERE clinic_id = %s
@@ -216,7 +216,7 @@ def get_site_by_name(name: str) -> dict | None:
         return None
     query = """
         SELECT id, clinic_id, name, address, timezone,
-               site_status, record_status, metadata,
+               site_status, record_status, record_metadata,
                created_at, updated_at
         FROM site
         WHERE id = %s
@@ -229,7 +229,7 @@ def get_site_by_id(site_id: str) -> dict | None:
     """Obtiene un site por ID."""
     query = """
         SELECT id, clinic_id, name, address, timezone,
-               site_status, record_status, metadata,
+               site_status, record_status, record_metadata,
                created_at, updated_at
         FROM site
         WHERE id = %s AND clinic_id = %s
@@ -297,15 +297,15 @@ def get_professionals_by_site(site_id: str, active_only: bool = True) -> list[di
 def get_patients(active_only: bool = True, limit: int = 100, offset: int = 0) -> list[dict]:
     """Obtiene pacientes de esta clínica."""
     query = """
-        SELECT id, clinic_id, name, last_name,
-               document_type, document_number, birth_date,
-               gender, email, phone,
-               patient_scheduling_status, record_status,
-               created_at, updated_at
+        SELECT id, clinic_id, site_id, first_name, last_name,
+               id_document_type, id_document_number, id_document_country,
+               birthday, gender_code, phones, emails,
+               scheduling_status, record_status, record_metadata,
+               created_by_user_id, created_at, updated_at
         FROM patient
         WHERE clinic_id = %s
           AND ($1 = false OR record_status = 'ACTIVE')
-        ORDER BY last_name, name
+        ORDER BY last_name, first_name
         LIMIT %s OFFSET %s
     """
     return [dict(r) for r in execute_query(query, (CLINIC_ID, active_only, limit, offset))]
@@ -314,11 +314,11 @@ def get_patients(active_only: bool = True, limit: int = 100, offset: int = 0) ->
 def get_patient_by_id(patient_id: str) -> dict | None:
     """Obtiene un paciente por ID."""
     query = """
-        SELECT id, clinic_id, name, last_name,
-               document_type, document_number, birth_date,
-               gender, email, phone,
-               patient_scheduling_status, record_status,
-               created_at, updated_at
+        SELECT id, clinic_id, site_id, first_name, last_name,
+               id_document_type, id_document_number, id_document_country,
+               birthday, gender_code, phones, emails,
+               scheduling_status, record_status, record_metadata,
+               created_by_user_id, created_at, updated_at
         FROM patient
         WHERE id = %s AND clinic_id = %s
     """
@@ -326,20 +326,20 @@ def get_patient_by_id(patient_id: str) -> dict | None:
     return dict(results[0]) if results else None
 
 
-def get_patient_by_document(document_type: str, document_number: str) -> dict | None:
+def get_patient_by_document(id_document_type: str, id_document_number: str) -> dict | None:
     """Obtiene un paciente por tipo y número de documento."""
     query = """
-        SELECT id, clinic_id, name, last_name,
-               document_type, document_number, birth_date,
-               gender, email, phone,
-               patient_scheduling_status, record_status,
-               created_at, updated_at
+        SELECT id, clinic_id, site_id, first_name, last_name,
+               id_document_type, id_document_number, id_document_country,
+               birthday, gender_code, phones, emails,
+               scheduling_status, record_status, record_metadata,
+               created_by_user_id, created_at, updated_at
         FROM patient
         WHERE clinic_id = %s
-          AND document_type = %s
-          AND document_number = %s
+          AND id_document_type = %s
+          AND id_document_number = %s
     """
-    results = execute_query(query, (CLINIC_ID, document_type, document_number))
+    results = execute_query(query, (CLINIC_ID, id_document_type, id_document_number))
     return dict(results[0]) if results else None
 
 
@@ -375,17 +375,18 @@ def get_services(active_only: bool = True) -> list[dict]:
 def get_treatments_by_site(site_id: str, active_only: bool = True) -> list[dict]:
     """Obtiene tratamientos de un site."""
     query = """
-        SELECT id, clinic_id, site_id, service_id, category_id,
-               name, treatment_type, duration_minutes,
-               base_price, currency, treatment_visibility,
-               record_status, created_at, updated_at
+        SELECT id, site_id, service_id, category_id,
+               name, type, duration_default_minutes,
+               price_without_tax, tax_rate, price_with_tax,
+               currency, visibility,
+               record_status, record_metadata,
+               created_at, updated_at
         FROM treatment
-        WHERE clinic_id = %s
-          AND site_id = %s
+        WHERE site_id = %s
           AND ($1 = false OR record_status = 'ACTIVE')
         ORDER BY name
     """
-    return [dict(r) for r in execute_query(query, (CLINIC_ID, site_id, active_only))]
+    return [dict(r) for r in execute_query(query, (site_id, active_only))]
 
 
 # =============================================================================
@@ -395,9 +396,11 @@ def get_treatments_by_site(site_id: str, active_only: bool = True) -> list[dict]
 def get_rooms_by_site(site_id: str, active_only: bool = True) -> list[dict]:
     """Obtiene las salas de un site."""
     query = """
-        SELECT id, clinic_id, site_id, name,
-               room_type, capacity, room_status,
-               record_status, created_at, updated_at
+        SELECT id, clinic_id, site_id, name, description,
+               room_type_id, capacity, color,
+               scheduling_policy_ids,
+               record_status, record_metadata,
+               created_at, updated_at
         FROM room
         WHERE clinic_id = %s
           AND site_id = %s
@@ -410,9 +413,10 @@ def get_rooms_by_site(site_id: str, active_only: bool = True) -> list[dict]:
 def get_equipment_by_site(site_id: str, active_only: bool = True) -> list[dict]:
     """Obtiene el equipamiento de un site."""
     query = """
-        SELECT id, clinic_id, site_id, name,
-               equipment_type, model, serial_number,
-               equipment_status, record_status,
+        SELECT id, clinic_id, site_id, name, description,
+               photo_url, equipment_type_id,
+               scheduling_policy_ids,
+               record_status, record_metadata,
                created_at, updated_at
         FROM equipment
         WHERE clinic_id = %s

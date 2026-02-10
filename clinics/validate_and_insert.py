@@ -29,7 +29,7 @@ from ui import (
 CLINICS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 REQUIRED_FIELDS = {
-    "organization": ["name", "home_country", "home_timezone"],
+    "organization": ["name", "country", "timezone"],
     "company": [
         "name", "legal_name", "tax_id_type", "tax_id_number",
         "address_fiscal", "country", "legal_rep_name",
@@ -128,8 +128,8 @@ def print_config(config: dict):
     print_key_value({
         "Nombre": org.get('name'),
         "Razón social": org.get('legal_name'),
-        "País": org.get('home_country'),
-        "Timezone": org.get('home_timezone'),
+        "País": org.get('country'),
+        "Timezone": org.get('timezone'),
         "Plan": org.get('plan_type'),
         "Estado": org.get('organization_status'),
     })
@@ -220,18 +220,19 @@ def generate_sql(config: dict) -> str:
     sql_parts.append(f"""
 -- ORGANIZATION
 INSERT INTO organization (
-    id, name, legal_name, home_country, home_timezone,
+    id, name, legal_name, country, timezone,
     plan_type, organization_status, record_status,
-    created_at, updated_at
+    record_metadata, created_at, updated_at
 ) VALUES (
     '{org_id}',
     '{escape_sql(org.get("name", ""))}',
     {sql_str(org.get("legal_name"))},
-    {sql_str(org.get("home_country"))},
-    {sql_str(org.get("home_timezone"))},
+    {sql_str(org.get("country"))},
+    {sql_str(org.get("timezone"))},
     {sql_str(org.get("plan_type", "professional"))},
     '{org.get("organization_status", "ONBOARDING")}',
     'ACTIVE',
+    '{{"source": "migration"}}'::jsonb,
     '{now}',
     '{now}'
 );""")
@@ -242,7 +243,7 @@ INSERT INTO company (
     id, organization_id, name, legal_name,
     tax_id_type, tax_id_number, address_fiscal, country, type,
     legal_rep_name, legal_rep_id_type, legal_rep_id_number, legal_rep_position,
-    record_status, created_at, updated_at
+    record_status, record_metadata, created_at, updated_at
 ) VALUES (
     '{company_id}',
     '{org_id}',
@@ -258,6 +259,7 @@ INSERT INTO company (
     {sql_str(comp.get("legal_rep_id_number"))},
     {sql_str(comp.get("legal_rep_position"))},
     'ACTIVE',
+    '{{"source": "migration"}}'::jsonb,
     '{now}',
     '{now}'
 );""")
@@ -269,7 +271,7 @@ INSERT INTO clinic (
     name, description, phone, email,
     country, timezone, default_currency,
     data_sharing_policy, clinic_status, record_status,
-    created_at, updated_at
+    record_metadata, created_at, updated_at
 ) VALUES (
     '{clinic_id}',
     '{org_id}',
@@ -284,6 +286,7 @@ INSERT INTO clinic (
     '{clinic.get("data_sharing_policy", "ISOLATED")}',
     '{clinic.get("clinic_status", "ONBOARDING")}',
     'ACTIVE',
+    '{{"source": "migration"}}'::jsonb,
     '{now}',
     '{now}'
 );""")
@@ -309,7 +312,8 @@ INSERT INTO clinic (
 -- SITE {i + 1}: {site.get("name", "")}
 INSERT INTO site (
     id, clinic_id, name, address, timezone,
-    site_status, record_status, created_at, updated_at
+    site_status, record_status, record_metadata,
+    created_at, updated_at
 ) VALUES (
     '{site_id}',
     '{clinic_id}',
@@ -318,6 +322,7 @@ INSERT INTO site (
     {sql_str(site.get("timezone"))},
     '{site.get("site_status", "ACTIVE")}',
     'ACTIVE',
+    '{{"source": "migration"}}'::jsonb,
     '{now}',
     '{now}'
 );""")
@@ -335,7 +340,8 @@ INSERT INTO site (
 -- BILLING LINE: {site.get("name", "")} - {bl.get("name", "")}
 INSERT INTO site_billing_line (
     id, site_id, company_id, name, description,
-    is_default, record_status, created_at, updated_at
+    is_default, record_status, record_metadata,
+    created_at, updated_at
 ) VALUES (
     '{bl_id}',
     '{site_id}',
@@ -344,6 +350,7 @@ INSERT INTO site_billing_line (
     {sql_str(bl.get("description"))},
     {str(bl.get("is_default", j == 0)).lower()},
     'ACTIVE',
+    '{{"source": "migration"}}'::jsonb,
     '{now}',
     '{now}'
 );""")
@@ -359,7 +366,7 @@ INSERT INTO payment_method (
     id, clinic_id, name, payment_method_type,
     requires_reference, allows_refunds, is_online_method,
     sort_order, payment_method_status, record_status,
-    created_at, updated_at
+    record_metadata, created_at, updated_at
 ) VALUES (
     '{pm_id}',
     '{clinic_id}',
@@ -371,6 +378,7 @@ INSERT INTO payment_method (
     {pm.get("sort_order") or "NULL"},
     'ACTIVE',
     'ACTIVE',
+    '{{"source": "migration"}}'::jsonb,
     '{now}',
     '{now}'
 );""")

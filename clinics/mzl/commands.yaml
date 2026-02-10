@@ -1,0 +1,53 @@
+# ============================================================
+# COMANDOS DE MIGRACIÓN - mzl
+# ============================================================
+# Orden optimizado para respetar dependencias entre tablas.
+# Ejecutar en orden numérico para evitar errores.
+# ============================================================
+
+commands:
+
+  # ----------------------------------------------------------
+  # 1. CONFIGURACIÓN (ejecutar primero)
+  # ----------------------------------------------------------
+  - name: "Generar queries.py"
+    category: "1. Configuración"
+    script: "__generate_queries__"
+    description: "Genera archivo queries.py con IDs de la clínica"
+
+  - name: "Crear usuario de migración"
+    category: "1. Configuración"
+    type: "global"
+    script: "create_migration_user.py"
+    function: "create_migration_user"
+    description: "Crea usuario sistema para operaciones de migración"
+
+  # ----------------------------------------------------------
+  # 18. UTILIDADES (excluidas del autopiloto)
+  # ----------------------------------------------------------
+  - name: "Crear usuario Cognito (DEV)"
+    category: "18. Utilidades"
+    type: "global"
+    script: "create_cognito_user.py"
+    function: "create_cognito_user_main"
+    description: "Crea usuario Cognito usando DATABASE_URL (desarrollo)"
+    skip_autopilot: true
+    skip_status: true
+
+  - name: "Limpiar datos migrados (BD)"
+    category: "18. Utilidades"
+    type: "global"
+    script: "clean_migrated_data.py"
+    function: "clean_all_clinic_data"
+    description: "Borra datos de la clínica (requiere confirmación)"
+    skip_autopilot: true
+    skip_status: true
+
+  - name: "Limpiar archivos (logs + JSON)"
+    category: "18. Utilidades"
+    type: "global"
+    script: "clean_files.py"
+    function: "clean_files"
+    description: "Borra logs y JSONs generados (con opciones)"
+    skip_autopilot: true
+    skip_status: true

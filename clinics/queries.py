@@ -17,7 +17,7 @@ from config.database import execute_query
 def get_organizations(active_only: bool = True) -> list[dict]:
     """Obtiene todas las organizaciones."""
     query = """
-        SELECT id, name, legal_name, home_country, home_timezone,
+        SELECT id, name, legal_name, country, timezone,
                plan_type, organization_status, record_status,
                created_at, updated_at
         FROM organization
@@ -30,7 +30,7 @@ def get_organizations(active_only: bool = True) -> list[dict]:
 def get_organization_by_id(organization_id: str) -> dict | None:
     """Obtiene una organización por su ID."""
     query = """
-        SELECT id, name, legal_name, home_country, home_timezone,
+        SELECT id, name, legal_name, country, timezone,
                plan_type, organization_status, record_status,
                created_at, updated_at
         FROM organization
@@ -43,7 +43,7 @@ def get_organization_by_id(organization_id: str) -> dict | None:
 def get_organization_by_name(name: str) -> dict | None:
     """Obtiene una organización por su nombre."""
     query = """
-        SELECT id, name, legal_name, home_country, home_timezone,
+        SELECT id, name, legal_name, country, timezone,
                plan_type, organization_status, record_status,
                created_at, updated_at
         FROM organization
@@ -132,7 +132,7 @@ def get_sites(active_only: bool = True) -> list[dict]:
     """Obtiene todos los sites."""
     query = """
         SELECT s.id, s.clinic_id, s.name, s.address, s.timezone,
-               s.site_status, s.record_status, s.metadata,
+               s.site_status, s.record_status, s.record_metadata,
                s.created_at, s.updated_at,
                c.name as clinic_name
         FROM site s
@@ -147,7 +147,7 @@ def get_site_by_id(site_id: str) -> dict | None:
     """Obtiene un site por su ID."""
     query = """
         SELECT s.id, s.clinic_id, s.name, s.address, s.timezone,
-               s.site_status, s.record_status, s.metadata,
+               s.site_status, s.record_status, s.record_metadata,
                s.created_at, s.updated_at,
                c.name as clinic_name
         FROM site s
@@ -162,7 +162,7 @@ def get_site_by_name(clinic_id: str, name: str) -> dict | None:
     """Obtiene un site por nombre dentro de una clínica."""
     query = """
         SELECT id, clinic_id, name, address, timezone,
-               site_status, record_status, metadata,
+               site_status, record_status, record_metadata,
                created_at, updated_at
         FROM site
         WHERE clinic_id = %s
@@ -177,7 +177,7 @@ def get_sites_by_clinic(clinic_id: str, active_only: bool = True) -> list[dict]:
     """Obtiene todos los sites de una clínica."""
     query = """
         SELECT id, clinic_id, name, address, timezone,
-               site_status, record_status, metadata,
+               site_status, record_status, record_metadata,
                created_at, updated_at
         FROM site
         WHERE clinic_id = %s
@@ -341,10 +341,12 @@ def get_services_by_clinic(clinic_id: str, active_only: bool = True) -> list[dic
 def get_treatments_by_site(site_id: str, active_only: bool = True) -> list[dict]:
     """Obtiene todos los tratamientos de un site."""
     query = """
-        SELECT id, clinic_id, site_id, service_id, category_id,
-               name, treatment_type, duration_minutes,
-               base_price, currency, treatment_visibility,
-               record_status, created_at, updated_at
+        SELECT id, site_id, service_id, category_id,
+               name, type, duration_default_minutes,
+               price_without_tax, tax_rate, price_with_tax,
+               currency, visibility,
+               record_status, record_metadata,
+               created_at, updated_at
         FROM treatment
         WHERE site_id = %s
           AND ($1 = false OR record_status = 'ACTIVE')
@@ -360,15 +362,15 @@ def get_treatments_by_site(site_id: str, active_only: bool = True) -> list[dict]
 def get_patients_by_clinic(clinic_id: str, active_only: bool = True, limit: int = 100) -> list[dict]:
     """Obtiene pacientes de una clínica (con límite)."""
     query = """
-        SELECT id, clinic_id, name, last_name,
-               document_type, document_number, birth_date,
-               gender, email, phone,
-               patient_scheduling_status, record_status,
-               created_at, updated_at
+        SELECT id, clinic_id, site_id, first_name, last_name,
+               id_document_type, id_document_number, id_document_country,
+               birthday, gender_code, phones, emails,
+               scheduling_status, record_status, record_metadata,
+               created_by_user_id, created_at, updated_at
         FROM patient
         WHERE clinic_id = %s
           AND ($1 = false OR record_status = 'ACTIVE')
-        ORDER BY last_name, name
+        ORDER BY last_name, first_name
         LIMIT %s
     """
     return execute_query(query, (clinic_id, active_only, limit))
@@ -377,11 +379,11 @@ def get_patients_by_clinic(clinic_id: str, active_only: bool = True, limit: int 
 def get_patient_by_id(patient_id: str) -> dict | None:
     """Obtiene un paciente por su ID."""
     query = """
-        SELECT id, clinic_id, name, last_name,
-               document_type, document_number, birth_date,
-               gender, email, phone,
-               patient_scheduling_status, record_status,
-               created_at, updated_at
+        SELECT id, clinic_id, site_id, first_name, last_name,
+               id_document_type, id_document_number, id_document_country,
+               birthday, gender_code, phones, emails,
+               scheduling_status, record_status, record_metadata,
+               created_by_user_id, created_at, updated_at
         FROM patient
         WHERE id = %s
     """
@@ -408,9 +410,11 @@ def get_patient_count_by_clinic(clinic_id: str, active_only: bool = True) -> int
 def get_rooms_by_site(site_id: str, active_only: bool = True) -> list[dict]:
     """Obtiene todas las salas de un site."""
     query = """
-        SELECT id, clinic_id, site_id, name,
-               room_type, capacity, room_status,
-               record_status, created_at, updated_at
+        SELECT id, clinic_id, site_id, name, description,
+               room_type_id, capacity, color,
+               scheduling_policy_ids,
+               record_status, record_metadata,
+               created_at, updated_at
         FROM room
         WHERE site_id = %s
           AND ($1 = false OR record_status = 'ACTIVE')
@@ -422,9 +426,10 @@ def get_rooms_by_site(site_id: str, active_only: bool = True) -> list[dict]:
 def get_equipment_by_site(site_id: str, active_only: bool = True) -> list[dict]:
     """Obtiene todo el equipamiento de un site."""
     query = """
-        SELECT id, clinic_id, site_id, name,
-               equipment_type, model, serial_number,
-               equipment_status, record_status,
+        SELECT id, clinic_id, site_id, name, description,
+               photo_url, equipment_type_id,
+               scheduling_policy_ids,
+               record_status, record_metadata,
                created_at, updated_at
         FROM equipment
         WHERE site_id = %s
