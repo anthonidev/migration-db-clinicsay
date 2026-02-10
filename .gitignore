@@ -143,3 +143,4 @@ temp/
 tmp/
 .agents/
 .claude/
+docs/schema.prisma

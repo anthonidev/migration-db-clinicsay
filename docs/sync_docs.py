@@ -71,16 +71,52 @@ def copy_docs(source: str, dest: str) -> dict:
 
 
 def copy_prisma_schema(source_base: str) -> bool:
-    """Copia el schema de Prisma desde PATH_DOCS/prisma/schema.prisma."""
+    """Copia el schema de Prisma desde PATH_DOCS/prisma/schema.prisma sin comentarios ni líneas vacías."""
     src = os.path.join(source_base, "prisma", "schema.prisma")
     if not os.path.exists(src):
         warning(f"Schema de Prisma no encontrado: {src}")
         return False
 
-    dest_dir = os.path.join(DOMAIN_DIR, "prisma")
-    os.makedirs(dest_dir, exist_ok=True)
-    dst = os.path.join(dest_dir, "schema.prisma")
-    shutil.copy2(src, dst)
+    with open(src, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Filtrar bloques no útiles (generator, datasource, enum), comentarios y líneas en blanco
+    cleaned = []
+    skip_block = False
+    brace_depth = 0
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Detectar inicio de bloque a ignorar
+        if stripped.startswith(("generator ", "datasource ")):
+            skip_block = True
+            brace_depth = 0
+
+        if skip_block:
+            brace_depth += stripped.count("{") - stripped.count("}")
+            if brace_depth <= 0 and "{" in stripped or "}" in stripped:
+                if brace_depth <= 0:
+                    skip_block = False
+            continue
+
+        # Saltar comentarios, líneas vacías y directivas de mapeo/índice
+        if not stripped:
+            continue
+        if stripped.startswith("//"):
+            continue
+        if stripped.startswith("@@map(") or stripped.startswith("@@index("):
+            continue
+
+        # Línea en blanco antes de cada bloque model/enum
+        if stripped.startswith(("model ", "enum ")) and cleaned:
+            cleaned.append("\n")
+
+        cleaned.append(stripped + "\n")
+
+    dst = os.path.join(DOCS_DIR, "schema.prisma")
+    with open(dst, "w", encoding="utf-8") as f:
+        f.writelines(cleaned)
     return True
 
 
@@ -101,14 +137,21 @@ def sync_docs():
         info("Verifique PATH_DOCS en .env")
         return
 
-    step(f"Origen: [cyan]{source_path}[/cyan]")
+    # Rutas de origen
+    docs_source = os.path.join(source_path, "docs", "REFERENCES", "DOMAIN")
+    prisma_path = os.path.join(source_path, "prisma", "schema.prisma")
+
+    step(f"Docs: [cyan]{docs_source}[/cyan]")
+    step(f"Prisma: [cyan]{prisma_path}[/cyan]")
     step(f"Destino: [cyan]{DOMAIN_DIR}[/cyan]")
 
-    # Contar archivos
-    total = count_files(source_path)
+    # Verificar que existe la ruta de docs
+    if not os.path.exists(docs_source):
+        error(f"Ruta de documentación no encontrada: {docs_source}")
+        return
 
-    # Verificar prisma schema
-    prisma_path = os.path.join(source_path, "prisma", "schema.prisma")
+    # Contar archivos
+    total = count_files(docs_source)
     has_prisma = os.path.exists(prisma_path)
 
     print_subheader("Archivos")
@@ -137,7 +180,7 @@ def sync_docs():
 
     # Copiar documentación
     step("Copiando documentación...")
-    stats = copy_docs(source_path, DOMAIN_DIR)
+    stats = copy_docs(docs_source, DOMAIN_DIR)
 
     # Copiar prisma schema
     step("Copiando schema de Prisma...")
