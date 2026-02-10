@@ -21,12 +21,11 @@ def show_menu():
         title="Menú Principal",
         options=[
             {"key": "1", "label": "Extraer schema de la base de datos", "group": "Schema"},
-            {"key": "2", "label": "Limpiar base de datos", "group": "Schema"},
-            {"key": "3", "label": "Inicializar nueva clínica", "group": "Clínicas"},
-            {"key": "4", "label": "Validar e insertar configuración", "group": "Clínicas"},
-            {"key": "5", "label": "Generar queries de clínica", "group": "Clínicas"},
-            {"key": "6", "label": "Ejecutar comandos de clínica", "group": "Migración"},
-            {"key": "7", "label": "Sincronizar documentación", "group": "Documentación"},
+            {"key": "2", "label": "Inicializar nueva clínica", "group": "Clínicas"},
+            {"key": "3", "label": "Validar e insertar configuración", "group": "Clínicas"},
+            {"key": "4", "label": "Generar queries de clínica", "group": "Clínicas"},
+            {"key": "5", "label": "Ejecutar comandos de clínica", "group": "Migración"},
+            {"key": "6", "label": "Sincronizar documentación", "group": "Documentación"},
             {"key": "0", "label": "Salir", "group": "Sistema"},
         ]
     )
@@ -43,18 +42,6 @@ def extract_schema_option():
     except Exception as e:
         error(f"{e}")
 
-
-def clean_database_option():
-    """Opcion para limpiar la base de datos."""
-    from schema.clean_database import clean_database
-
-    try:
-        clean_database()
-    except KeyboardInterrupt:
-        console.print()
-        info("Operación cancelada")
-    except Exception as e:
-        error(f"{e}")
 
 
 def init_clinic_option():
@@ -138,20 +125,17 @@ def main():
             extract_schema_option()
             ask("Presiona Enter para continuar")
         elif option == "2":
-            clean_database_option()
-            ask("Presiona Enter para continuar")
-        elif option == "3":
             init_clinic_option()
             ask("Presiona Enter para continuar")
-        elif option == "4":
+        elif option == "3":
             validate_insert_option()
             ask("Presiona Enter para continuar")
-        elif option == "5":
+        elif option == "4":
             generate_queries_option()
             ask("Presiona Enter para continuar")
-        elif option == "6":
+        elif option == "5":
             run_commands_option()
-        elif option == "7":
+        elif option == "6":
             sync_docs_option()
             ask("Presiona Enter para continuar")
         elif option == "0":

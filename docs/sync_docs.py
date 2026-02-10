@@ -19,14 +19,6 @@ from ui import (
 
 load_dotenv()
 
-# Archivos a excluir (no útiles para migración)
-EXCLUDED_FILES = {
-    "http.md",
-    "adapters.md",
-    "events.md",
-    "application.md",
-}
-
 DOCS_DIR = os.path.dirname(os.path.abspath(__file__))
 DOMAIN_DIR = os.path.join(DOCS_DIR, "DOMAIN")
 
@@ -39,26 +31,20 @@ def get_source_path() -> str:
     return path
 
 
-def count_files(path: str, excluded: set) -> tuple:
-    """Cuenta archivos totales y excluidos."""
+def count_files(path: str) -> int:
+    """Cuenta archivos .md totales."""
     total = 0
-    excluded_count = 0
-
     for root, dirs, files in os.walk(path):
         for file in files:
             if file.endswith(".md"):
                 total += 1
-                if file in excluded:
-                    excluded_count += 1
-
-    return total, excluded_count
+    return total
 
 
-def copy_docs(source: str, dest: str, excluded: set) -> dict:
-    """Copia documentación excluyendo archivos innecesarios."""
+def copy_docs(source: str, dest: str) -> dict:
+    """Copia documentación de dominio."""
     stats = {
         "copied": 0,
-        "excluded": 0,
         "folders": 0,
     }
 
@@ -76,16 +62,26 @@ def copy_docs(source: str, dest: str, excluded: set) -> dict:
             if not file.endswith(".md"):
                 continue
 
-            if file in excluded:
-                stats["excluded"] += 1
-                continue
-
             src_file = os.path.join(root, file)
             dst_file = os.path.join(dest_path, file)
             shutil.copy2(src_file, dst_file)
             stats["copied"] += 1
 
     return stats
+
+
+def copy_prisma_schema(source_base: str) -> bool:
+    """Copia el schema de Prisma desde PATH_DOCS/prisma/schema.prisma."""
+    src = os.path.join(source_base, "prisma", "schema.prisma")
+    if not os.path.exists(src):
+        warning(f"Schema de Prisma no encontrado: {src}")
+        return False
+
+    dest_dir = os.path.join(DOMAIN_DIR, "prisma")
+    os.makedirs(dest_dir, exist_ok=True)
+    dst = os.path.join(dest_dir, "schema.prisma")
+    shutil.copy2(src, dst)
+    return True
 
 
 def sync_docs():
@@ -109,18 +105,15 @@ def sync_docs():
     step(f"Destino: [cyan]{DOMAIN_DIR}[/cyan]")
 
     # Contar archivos
-    total, excluded_count = count_files(source_path, EXCLUDED_FILES)
-    to_copy = total - excluded_count
+    total = count_files(source_path)
+
+    # Verificar prisma schema
+    prisma_path = os.path.join(source_path, "prisma", "schema.prisma")
+    has_prisma = os.path.exists(prisma_path)
 
     print_subheader("Archivos")
-    info(f"Total en origen: {total}")
-    info(f"A copiar: {to_copy}")
-    info(f"A excluir: {excluded_count}")
-
-    console.print()
-    console.print("  [dim]Archivos excluidos:[/dim]")
-    for f in sorted(EXCLUDED_FILES):
-        console.print(f"    [red]•[/red] {f}")
+    info(f"Documentación .md: {total}")
+    info(f"Prisma schema: {'encontrado' if has_prisma else 'no encontrado'}")
 
     console.print()
 
@@ -144,7 +137,14 @@ def sync_docs():
 
     # Copiar documentación
     step("Copiando documentación...")
-    stats = copy_docs(source_path, DOMAIN_DIR, EXCLUDED_FILES)
+    stats = copy_docs(source_path, DOMAIN_DIR)
+
+    # Copiar prisma schema
+    step("Copiando schema de Prisma...")
+    if copy_prisma_schema(source_path):
+        success("Schema de Prisma copiado")
+    else:
+        warning("Schema de Prisma no copiado")
 
     # Mostrar resultado
     console.print()
@@ -152,8 +152,8 @@ def sync_docs():
 
     print_subheader("Resumen")
     info(f"Carpetas creadas: {stats['folders']}")
-    info(f"Archivos copiados: {stats['copied']}")
-    info(f"Archivos excluidos: {stats['excluded']}")
+    info(f"Archivos .md copiados: {stats['copied']}")
+    info(f"Schema Prisma: {'copiado' if has_prisma else 'no encontrado'}")
 
 
 if __name__ == "__main__":

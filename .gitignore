@@ -141,3 +141,5 @@ nul
 logs/
 temp/
 tmp/
+.agents/
+.claude/

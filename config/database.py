@@ -8,17 +8,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def get_db_config(use_production: bool = False) -> dict:
-    """
-    Obtiene la configuración de la base de datos.
-
-    Args:
-        use_production: Si True, usa DATABASE_URL_PRD en lugar de DATABASE_URL
-    """
-    env_var = "DATABASE_URL_PRD" if use_production else "DATABASE_URL"
-    url = os.getenv(env_var)
+def get_db_config() -> dict:
+    """Obtiene la configuración de la base de datos desde DATABASE_URL."""
+    url = os.getenv("DATABASE_URL")
     if not url:
-        raise ValueError(f"{env_var} no encontrada en .env")
+        raise ValueError("DATABASE_URL no encontrada en .env")
 
     parsed = urlparse(url)
     database = parsed.path[1:] if parsed.path else ""
