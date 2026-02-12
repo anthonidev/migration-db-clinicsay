@@ -98,6 +98,7 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
     is_insert = "insert" in script_name.lower() or "insert" in function_name.lower()
     is_create = "create" in script_name.lower() or "create" in function_name.lower()
     is_update = "update" in script_name.lower() or "update" in function_name.lower()
+    is_configure = "configure" in script_name.lower() or "configure" in function_name.lower()
 
     if is_extract:
         # Para scripts de extracción, verificar si existe el JSON de salida
@@ -118,6 +119,8 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "extract_commissions": "commissions.json",
             "extract_care_plan": "care_plans.json",
             "extract_care_plans": "care_plans.json",
+            "extract_clinical_notes": "clinical_notes.json",
+            "extract_budgets": "budgets.json",
             "extract_schedule": "schedules.json",
             "extract_schedules": "schedules.json",
             "extract_nota": "notas.json",
@@ -138,7 +141,7 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             processed_path = os.path.join(clinic_path, "processed", output_file)
             return "done" if os.path.exists(processed_path) else "pending"
 
-    if is_insert or is_create or is_update:
+    if is_insert or is_create or is_update or is_configure:
         # Para scripts de inserción/creación/actualización, verificar logs
         # Extraer nombre base del script para buscar logs
         log_patterns = {
@@ -151,25 +154,28 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "insert_consents": "insert_consent_2*.log",
             "insert_catalog": "insert_catalog_2*.log",
             "insert_room": "insert_room_2*.log",
-            "insert_rooms": "insert_room_2*.log",
+            "insert_rooms": "insert_rooms_2*.log",
             "insert_availability": "insert_availability_2*.log",
             "insert_commission": "insert_commission_2*.log",
             "insert_commissions": "insert_commission_2*.log",
-            "insert_care_plan": "insert_care_plan_2*.log",
-            "insert_care_plans": "insert_care_plan_2*.log",
+            "insert_care_plan": "insert_care_plan*_2*.log",
+            "insert_care_plans": "insert_care_plans_2*.log",
+            "insert_clinical_notes": "insert_clinical_notes_2*.log",
+            "insert_budgets": "insert_budgets_2*.log",
             "insert_schedule": "insert_schedule_2*.log",
             "insert_schedules": "insert_schedule_2*.log",
             "insert_nota": "insert_nota_2*.log",
             "insert_notas": "insert_nota_2*.log",
-            "insert_budget": "insert_budget_2*.log",
-            "insert_budgets": "insert_budget_2*.log",
+            "insert_budget": "insert_budget*_2*.log",
+            "insert_budgets": "insert_budgets_2*.log",
             "insert_billing": "insert_billing_2*.log",
             "insert_billing_historical": "insert_billing_historical_2*.log",
-            "insert_task": "insert_task_2*.log",
-            "insert_tasks": "insert_task_2*.log",
+            "insert_task": "insert_task*_2*.log",
+            "insert_tasks": "insert_tasks_2*.log",
             "insert_treatment_tasks": "insert_treatment_tasks_2*.log",
             "insert_treatment_actions": "insert_treatment_actions_2*.log",
             "insert_cash": "insert_cash_2*.log",
+            "configure_sequences": "configure_sequences_2*.log",
             "create_migration_user": "create_migration_user_2*.log",
             "update_treatment_sessions": "update_treatment_sessions_2*.log",
             # Pase a producción

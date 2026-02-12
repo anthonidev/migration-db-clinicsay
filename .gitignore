@@ -3,12 +3,11 @@
 # =============================================
 docs/DOMAIN/
 schema/clinicsay_schema.sql
-# Clínicas (datos sensibles de cada migración)
 
-# Mantener estructura base
-!clinics/__init__.py
-!clinics/init_clinic.py
-!clinics/validate_and_insert.py
+# Clínicas: ignorar toda la data de cada clínica (datos sensibles)
+# Esto cubre: fuente/, processed/, logs/, migrations/, scripts/, queries.py, config.yaml, etc.
+clinics/*/
+!clinics/global_commands/
 
 # =============================================
 # PYTHON

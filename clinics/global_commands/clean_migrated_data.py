@@ -6,7 +6,7 @@ Incluye: datos, configuración, clinic, site y company.
 
 Orden de borrado (respeta foreign keys):
 1. cash_movement, cash_session, cash_register
-2. task
+2. task, task_status_group
 3. trigger_scheduled_execution, trigger_rule (automatización)
 4. payment_allocation, payment, billing_item, billing_document, billing_client
 5. receipt_item, receipt, billing_sequence
@@ -252,6 +252,8 @@ def clean_all_clinic_data(clinic_folder: str, force: bool = False):
         print("2. Limpiando tareas...")
         count = delete_all_records(cursor, "task", "clinic_id", CLINIC_ID)
         log_delete("task", count)
+        count = delete_all_for_sites(cursor, "task_status_group", SITE_IDS)
+        log_delete("task_status_group", count)
         conn.commit()
 
         # 3. AUTOMATIZACIÓN (trigger_rules)

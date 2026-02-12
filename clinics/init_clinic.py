@@ -36,6 +36,15 @@ commands:
     script: "__generate_queries__"
     description: "Genera archivo queries.py con IDs de la clínica"
 
+  - name: "Formatear archivos fuente"
+    category: "1. Configuración"
+    type: "global"
+    script: "format_source_files.py"
+    function: "format_source_files"
+    description: "Renombra archivos en fuente/ a formato estándar"
+    skip_autopilot: true
+    skip_status: true
+
   - name: "Crear usuario de migración"
     category: "1. Configuración"
     type: "global"
