@@ -23,9 +23,9 @@ def show_menu():
             {"key": "1", "label": "Extraer schema de la base de datos", "group": "Schema"},
             {"key": "2", "label": "Inicializar nueva clínica", "group": "Clínicas"},
             {"key": "3", "label": "Validar e insertar configuración", "group": "Clínicas"},
-            {"key": "4", "label": "Generar queries de clínica", "group": "Clínicas"},
-            {"key": "5", "label": "Ejecutar comandos de clínica", "group": "Migración"},
-            {"key": "6", "label": "Sincronizar documentación", "group": "Documentación"},
+            {"key": "4", "label": "Ejecutar comandos de clínica", "group": "Migración"},
+            {"key": "5", "label": "Sincronizar documentación", "group": "Documentación"},
+            {"key": "6", "label": "Limpiar clínica por ID", "group": "Limpieza"},
             {"key": "0", "label": "Salir", "group": "Sistema"},
         ]
     )
@@ -70,19 +70,6 @@ def validate_insert_option():
         error(f"{e}")
 
 
-def generate_queries_option():
-    """Opcion para generar queries de una clínica."""
-    from clinics.generate_queries import generate_queries
-
-    try:
-        generate_queries()
-    except KeyboardInterrupt:
-        console.print()
-        info("Operación cancelada")
-    except Exception as e:
-        error(f"{e}")
-
-
 def run_commands_option():
     """Opcion para ejecutar comandos de una clínica."""
     from clinics.run_commands import run_clinic_commands
@@ -102,6 +89,19 @@ def sync_docs_option():
 
     try:
         sync_docs()
+    except KeyboardInterrupt:
+        console.print()
+        info("Operación cancelada")
+    except Exception as e:
+        error(f"{e}")
+
+
+def clean_clinic_by_id_option():
+    """Opcion para limpiar una clínica por su ID."""
+    from clinics.clean_clinic_by_id import clean_clinic_by_id
+
+    try:
+        clean_clinic_by_id()
     except KeyboardInterrupt:
         console.print()
         info("Operación cancelada")
@@ -131,12 +131,12 @@ def main():
             validate_insert_option()
             ask("Presiona Enter para continuar")
         elif option == "4":
-            generate_queries_option()
-            ask("Presiona Enter para continuar")
-        elif option == "5":
             run_commands_option()
-        elif option == "6":
+        elif option == "5":
             sync_docs_option()
+            ask("Presiona Enter para continuar")
+        elif option == "6":
+            clean_clinic_by_id_option()
             ask("Presiona Enter para continuar")
         elif option == "0":
             info("¡Hasta luego!")

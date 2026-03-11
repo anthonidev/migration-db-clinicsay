@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+import subprocess
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -135,6 +136,24 @@ def sync_docs():
     if not os.path.exists(source_path):
         error(f"Ruta no encontrada: {source_path}")
         info("Verifique PATH_DOCS en .env")
+        return
+
+    # Actualizar repositorio con git pull
+    step(f"Actualizando repositorio en [cyan]{source_path}[/cyan]...")
+    try:
+        result = subprocess.run(
+            ["git", "pull"],
+            cwd=source_path,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            success(f"git pull: {result.stdout.strip()}")
+        else:
+            error(f"git pull falló: {result.stderr.strip()}")
+            return
+    except FileNotFoundError:
+        error("git no encontrado en el sistema")
         return
 
     # Rutas de origen

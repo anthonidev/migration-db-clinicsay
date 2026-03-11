@@ -217,6 +217,7 @@ def generate_sql(config: dict) -> str:
 
     sql_parts = []
 
+    # 1. ORGANIZATION
     sql_parts.append(f"""
 -- ORGANIZATION
 INSERT INTO organization (
@@ -237,33 +238,7 @@ INSERT INTO organization (
     '{now}'
 );""")
 
-    sql_parts.append(f"""
--- COMPANY
-INSERT INTO company (
-    id, organization_id, name, legal_name,
-    tax_id_type, tax_id_number, address_fiscal, country, type,
-    legal_rep_name, legal_rep_id_type, legal_rep_id_number, legal_rep_position,
-    record_status, record_metadata, created_at, updated_at
-) VALUES (
-    '{company_id}',
-    '{org_id}',
-    '{escape_sql(comp.get("name", ""))}',
-    {sql_str(comp.get("legal_name"))},
-    {sql_str(comp.get("tax_id_type"))},
-    {sql_str(comp.get("tax_id_number"))},
-    {sql_str(comp.get("address_fiscal"))},
-    {sql_str(comp.get("country"))},
-    '{comp.get("type", "CLINIC_ISSUER")}',
-    {sql_str(comp.get("legal_rep_name"))},
-    {sql_str(comp.get("legal_rep_id_type"))},
-    {sql_str(comp.get("legal_rep_id_number"))},
-    {sql_str(comp.get("legal_rep_position"))},
-    'ACTIVE',
-    '{{"source": "migration"}}'::jsonb,
-    '{now}',
-    '{now}'
-);""")
-
+    # 2. CLINIC (sin default_issuer_company_id, se actualiza después)
     sql_parts.append(f"""
 -- CLINIC
 INSERT INTO clinic (
@@ -275,7 +250,7 @@ INSERT INTO clinic (
 ) VALUES (
     '{clinic_id}',
     '{org_id}',
-    '{company_id}',
+    NULL,
     '{escape_sql(clinic.get("name", ""))}',
     {sql_str(clinic.get("description"))},
     {sql_str(clinic.get("phone"))},
@@ -291,6 +266,7 @@ INSERT INTO clinic (
     '{now}'
 );""")
 
+    # 3. SITES
     site_ids = []  # Para guardar los IDs generados
 
     for i, site in enumerate(sites):
@@ -327,6 +303,43 @@ INSERT INTO site (
     '{now}'
 );""")
 
+    # 4. COMPANY (con clinic_id y site_id del primer site)
+    first_site_id = site_ids[0][0] if site_ids else "NULL"
+    sql_parts.append(f"""
+-- COMPANY
+INSERT INTO company (
+    id, organization_id, clinic_id, site_id,
+    name, legal_name,
+    tax_id_type, tax_id_number, address_fiscal, country, type,
+    legal_rep_name, legal_rep_id_type, legal_rep_id_number, legal_rep_position,
+    record_status, record_metadata, created_at, updated_at
+) VALUES (
+    '{company_id}',
+    '{org_id}',
+    '{clinic_id}',
+    '{first_site_id}',
+    '{escape_sql(comp.get("name", ""))}',
+    {sql_str(comp.get("legal_name"))},
+    {sql_str(comp.get("tax_id_type"))},
+    {sql_str(comp.get("tax_id_number"))},
+    {sql_str(comp.get("address_fiscal"))},
+    {sql_str(comp.get("country"))},
+    '{comp.get("type", "CLINIC_ISSUER")}',
+    {sql_str(comp.get("legal_rep_name"))},
+    {sql_str(comp.get("legal_rep_id_type"))},
+    {sql_str(comp.get("legal_rep_id_number"))},
+    {sql_str(comp.get("legal_rep_position"))},
+    'ACTIVE',
+    '{{"source": "migration"}}'::jsonb,
+    '{now}',
+    '{now}'
+);""")
+
+    # 5. UPDATE clinic con default_issuer_company_id
+    sql_parts.append(f"""
+-- UPDATE CLINIC: asignar company como issuer por defecto
+UPDATE clinic SET default_issuer_company_id = '{company_id}' WHERE id = '{clinic_id}';""")
+
     # Site Billing Lines
     for site_id, site in site_ids:
         billing_lines = site.get("billing_lines", [])
@@ -349,6 +362,33 @@ INSERT INTO site_billing_line (
     '{escape_sql(bl.get("name", "Línea Principal"))}',
     {sql_str(bl.get("description"))},
     {str(bl.get("is_default", j == 0)).lower()},
+    'ACTIVE',
+    '{{"source": "migration"}}'::jsonb,
+    '{now}',
+    '{now}'
+);""")
+
+    # Task Status Groups (defaults por Site - replica lo que hace la app al crear un Site)
+    default_status_groups = [
+        {"name": "To Do", "order": 1},
+        {"name": "In Progress", "order": 2},
+        {"name": "Done", "order": 3},
+    ]
+    for site_id, site in site_ids:
+        for sg in default_status_groups:
+            sg_id = str(ULID()).upper()
+            sql_parts.append(f"""
+-- TASK STATUS GROUP: {site.get("name", "")} - {sg["name"]}
+INSERT INTO task_status_group (
+    id, site_id, name, "order", is_system,
+    record_status, record_metadata,
+    created_at, updated_at
+) VALUES (
+    '{sg_id}',
+    '{site_id}',
+    '{sg["name"]}',
+    {sg["order"]},
+    false,
     'ACTIVE',
     '{{"source": "migration"}}'::jsonb,
     '{now}',

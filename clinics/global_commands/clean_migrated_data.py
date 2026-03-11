@@ -10,7 +10,7 @@ Orden de borrado (respeta foreign keys):
 3. trigger_scheduled_execution, trigger_rule (automatización)
 4. payment_allocation, payment, billing_item, billing_document, billing_client
 5. receipt_item, receipt, billing_sequence
-6. budget_proposal, budget
+6. budget_proposal, budget, budget_status
 7. schedule_history_entry, schedule_block
 8. supply_consumption, planned_session_visit_state, planned_session
 9. clinical_note_comment, clinical_note, clinical_note_template
@@ -295,6 +295,8 @@ def clean_all_clinic_data(clinic_folder: str, force: bool = False):
         log_delete("budget_proposal", count)
         count = delete_all_records(cursor, "budget", "clinic_id", CLINIC_ID)
         log_delete("budget", count)
+        count = delete_all_for_sites(cursor, "budget_status", SITE_IDS)
+        log_delete("budget_status", count)
         conn.commit()
 
         # 7. AGENDA
@@ -491,6 +493,8 @@ def clean_all_clinic_data(clinic_folder: str, force: bool = False):
         print("26. Limpiando profesionales...")
         count = delete_all_records(cursor, "professional", "clinic_id", CLINIC_ID)
         log_delete("professional", count)
+        count = delete_all_records(cursor, "professional_type", "clinic_id", CLINIC_ID)
+        log_delete("professional_type", count)
         conn.commit()
 
         # 27. CONTEXTOS Y PERMISOS DE USUARIO
