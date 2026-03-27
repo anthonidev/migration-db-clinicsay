@@ -64,15 +64,6 @@ commands:
     skip_autopilot: true
     skip_status: true
 
-  - name: "Limpiar datos migrados (BD)"
-    category: "18. Utilidades"
-    type: "global"
-    script: "clean_migrated_data.py"
-    function: "clean_all_clinic_data"
-    description: "Borra datos de la clínica (requiere confirmación)"
-    skip_autopilot: true
-    skip_status: true
-
   - name: "Limpiar archivos (logs + JSON)"
     category: "18. Utilidades"
     type: "global"

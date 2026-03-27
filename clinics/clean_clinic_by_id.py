@@ -10,12 +10,12 @@ Orden de borrado (respeta foreign keys del schema clinicsay_schema.sql):
 3. trigger_scheduled_execution, trigger_rule (automatización)
 4. payment_detail, payment_allocation, payment, billing_document_file, billing_item, billing_document, billing_client
 5. receipt_item, receipt, billing_sequence
-6. budget_proposal, budget, budget_status
+6. budget_consent_template, budget_proposal, budget, budget_status, budget_template
 7. schedule_history_entry, schedule_block
 8. supply_consumption, planned_session_visit_state, planned_session
 9. clinical_note_comment, clinical_note, clinical_note_template
 10. form_assignment, care_plan
-11. consent_evidence, consent_instance_signature, consent_instance_signer, consent_instance
+11. consent_delivery_dlq, consent_delivery_attempt, consent_evidence, consent_instance_signature, consent_instance_signer, consent_instance
 12. consent_template
 13. form_response, form_template_version, form_template
 14. commission_entry, commission_settlement, commission_rule
@@ -363,9 +363,13 @@ def clean_clinic_by_id():
 
         # 6. PRESUPUESTOS
         info("6. Limpiando presupuestos...")
+        budget_ids = get_ids_from_table(cursor, "budget", "id", "clinic_id", CLINIC_ID)
+        log_delete("budget_consent_template", delete_by_parent_id(cursor, "budget_consent_template", "budget_id", budget_ids))
+        log_delete("budget_simple_delivery_attempt", delete_all_records(cursor, "budget_simple_delivery_attempt", "clinic_id", CLINIC_ID))
         log_delete("budget_proposal", delete_all_records(cursor, "budget_proposal", "clinic_id", CLINIC_ID))
         log_delete("budget", delete_all_records(cursor, "budget", "clinic_id", CLINIC_ID))
         log_delete("budget_status", delete_all_for_sites(cursor, "budget_status", SITE_IDS))
+        log_delete("budget_template", delete_all_records(cursor, "budget_template", "clinic_id", CLINIC_ID))
         conn.commit()
 
         # 7. AGENDA
@@ -414,6 +418,11 @@ def clean_clinic_by_id():
 
         # 11. CONSENTIMIENTOS
         info("11. Limpiando consentimientos...")
+        log_delete("consent_image_access_logs", delete_all_records(cursor, "consent_image_access_logs", "clinic_id", CLINIC_ID))
+        log_delete("consent_evidence_access_log", delete_by_parent_id(cursor, "consent_evidence_access_log", "consent_instance_id", consent_instance_ids))
+        log_delete("consent_images", delete_by_parent_id(cursor, "consent_images", "consent_instance_id", consent_instance_ids))
+        log_delete("consent_delivery_dlq", delete_by_parent_id(cursor, "consent_delivery_dlq", "consent_instance_id", consent_instance_ids))
+        log_delete("consent_delivery_attempt", delete_by_parent_id(cursor, "consent_delivery_attempt", "consent_instance_id", consent_instance_ids))
         log_delete("consent_evidence", delete_by_parent_id(cursor, "consent_evidence", "consent_instance_id", consent_instance_ids))
         log_delete("consent_instance_signature", delete_by_parent_id(cursor, "consent_instance_signature", "consent_instance_id", consent_instance_ids))
         log_delete("consent_instance_signer", delete_by_parent_id(cursor, "consent_instance_signer", "consent_instance_id", consent_instance_ids))
@@ -507,6 +516,23 @@ def clean_clinic_by_id():
         log_delete("notification", delete_in_batches(conn, cursor, "notification", "clinic_id", CLINIC_ID))
         log_delete("binaries", delete_in_batches(conn, cursor, "binaries", "clinic_id", CLINIC_ID))
         log_delete("document_references", delete_all_records(cursor, "document_references", "clinic_id", CLINIC_ID))
+        conn.commit()
+
+        # 24b. CLASES Y MEMBRESÍAS
+        info("24b. Limpiando clases y membresías...")
+        log_delete("class_booking", delete_all_records(cursor, "class_booking", "clinic_id", CLINIC_ID))
+        log_delete("class_group_session", delete_all_records(cursor, "class_group_session", "clinic_id", CLINIC_ID))
+        log_delete("class_group", delete_all_records(cursor, "class_group", "clinic_id", CLINIC_ID))
+        log_delete("enrollment", delete_all_records(cursor, "enrollment", "clinic_id", CLINIC_ID))
+        membership_ids = get_ids_from_table(cursor, "membership", "id", "clinic_id", CLINIC_ID)
+        log_delete("membership_class", delete_by_parent_id(cursor, "membership_class", "membership_id", membership_ids))
+        log_delete("membership", delete_all_records(cursor, "membership", "clinic_id", CLINIC_ID))
+        log_delete("class", delete_all_records(cursor, "class", "clinic_id", CLINIC_ID))
+        conn.commit()
+
+        # 24c. ALERTAS DE PACIENTES
+        info("24c. Limpiando alertas de pacientes...")
+        log_delete("patient_alert", delete_all_records(cursor, "patient_alert", "clinic_id", CLINIC_ID))
         conn.commit()
 
         # 25. PACIENTES

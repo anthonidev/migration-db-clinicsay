@@ -141,6 +141,10 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "extract_appointments_simple": "appointments_simple.json",
             "extract_appointments_multi": "appointments_multi.json",
             "extract_appointments_packs": "appointments_packs.json",
+            "extract_update_treatments": "update_treatments.json",
+            "extract_budget_templates": "budget_templates.json",
+            "extract_consent_templates": "consent_data.json",
+            "extract_supplies": "supplies.json",
         }
 
         output_file = output_files.get(function_name)
@@ -196,6 +200,10 @@ def get_command_status(clinic_folder: str, command: dict) -> str:
             "migrate_to_production": "migrate_to_production_2*.log",
             "create_cognito_user_prd": "create_cognito_user_prd_2*.log",
             "upload_consent_files_prd": "upload_consent_files_prd_2*.log",
+            "insert_update_treatments": "insert_update_treatments_2*.log",
+            "insert_budget_templates": "insert_budget_templates_2*.log",
+            "insert_consent_templates": "insert_consent_templates_2*.log",
+            "insert_supplies": "insert_supplies_2*.log",
         }
 
         log_pattern = log_patterns.get(function_name)
