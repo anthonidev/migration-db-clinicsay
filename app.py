@@ -26,6 +26,8 @@ def show_menu():
             {"key": "4", "label": "Ejecutar comandos de clínica", "group": "Migración"},
             {"key": "5", "label": "Sincronizar documentación", "group": "Documentación"},
             {"key": "6", "label": "Limpiar clínica por ID", "group": "Limpieza"},
+            {"key": "7", "label": "Reset password usuario Cognito", "group": "Cognito"},
+            {"key": "8", "label": "Descargar datos de clínica", "group": "Datos"},
             {"key": "0", "label": "Salir", "group": "Sistema"},
         ]
     )
@@ -96,6 +98,32 @@ def sync_docs_option():
         error(f"{e}")
 
 
+def reset_cognito_password_option():
+    """Opcion para resetear contraseña de usuario en Cognito."""
+    from clinics.reset_cognito_password import reset_cognito_password
+
+    try:
+        reset_cognito_password()
+    except KeyboardInterrupt:
+        console.print()
+        info("Operación cancelada")
+    except Exception as e:
+        error(f"{e}")
+
+
+def download_clinic_data_option():
+    """Opcion para descargar datos de una clínica."""
+    from clinics.download_clinic_data import download_clinic_data
+
+    try:
+        download_clinic_data()
+    except KeyboardInterrupt:
+        console.print()
+        info("Operación cancelada")
+    except Exception as e:
+        error(f"{e}")
+
+
 def clean_clinic_by_id_option():
     """Opcion para limpiar una clínica por su ID."""
     from clinics.clean_clinic_by_id import clean_clinic_by_id
@@ -137,6 +165,12 @@ def main():
             ask("Presiona Enter para continuar")
         elif option == "6":
             clean_clinic_by_id_option()
+            ask("Presiona Enter para continuar")
+        elif option == "7":
+            reset_cognito_password_option()
+            ask("Presiona Enter para continuar")
+        elif option == "8":
+            download_clinic_data_option()
             ask("Presiona Enter para continuar")
         elif option == "0":
             info("¡Hasta luego!")

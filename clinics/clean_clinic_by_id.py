@@ -5,7 +5,7 @@ Script independiente que no requiere carpeta de clínica ni queries.py.
 Busca la información de la clínica directamente en la base de datos.
 
 Orden de borrado (respeta foreign keys del schema clinicsay_schema.sql):
-1. cash_movement, cash_session, cash_register
+1. cash_movement_file, cash_movement, cash_session_access, cash_session_incident, cash_session_count, cash_session, cash_register
 2. task, task_status_group
 3. trigger_scheduled_execution, trigger_rule (automatización)
 4. payment_detail, payment_allocation, payment, billing_document_file, billing_item, billing_document, billing_client
@@ -146,6 +146,28 @@ def delete_all_records(cursor, table: str, id_column: str, filter_value: str) ->
     return cursor.rowcount
 
 
+def delete_in_batches(conn, cursor, table: str, id_column: str, filter_value: str, batch_size: int = 1000) -> int:
+    """Borra registros en lotes para evitar locks largos y timeouts."""
+    if not table_exists(cursor, table):
+        return -1
+    if filter_value is None:
+        return 0
+    total = 0
+    while True:
+        cursor.execute(
+            f"DELETE FROM {table} WHERE id IN (SELECT id FROM {table} WHERE {id_column} = %s LIMIT %s)",
+            (filter_value, batch_size),
+        )
+        deleted = cursor.rowcount
+        conn.commit()
+        total += deleted
+        if deleted > 0:
+            step(f"  {table}: {total} borrados...")
+        if deleted < batch_size:
+            break
+    return total
+
+
 def delete_by_parent_id(cursor, table: str, parent_column: str, parent_ids: list) -> int:
     """Borra registros de una tabla hija por IDs de la tabla padre."""
     if not table_exists(cursor, table):
@@ -158,11 +180,42 @@ def delete_by_parent_id(cursor, table: str, parent_column: str, parent_ids: list
     return cursor.rowcount
 
 
+def delete_by_parent_site_ids(cursor, child_table: str, parent_table: str, fk_column: str, site_ids: list) -> int:
+    """
+    Borra registros de una tabla hija usando subconsulta por site_ids de la tabla padre.
+    Útil para tablas hijas sin site_id propio (ej: cash_session_access).
+    """
+    if not table_exists(cursor, child_table):
+        return -1
+    if not site_ids:
+        return 0
+    placeholders = ",".join(["%s"] * len(site_ids))
+    query = f"""
+        DELETE FROM {child_table}
+        WHERE {fk_column} IN (
+            SELECT id FROM {parent_table} WHERE site_id IN ({placeholders})
+        )
+    """
+    cursor.execute(query, site_ids)
+    return cursor.rowcount
+
+
 def get_ids_from_table(cursor, table: str, id_column: str, filter_column: str, filter_value: str) -> list:
     """Obtiene lista de IDs de una tabla."""
     if not table_exists(cursor, table):
         return []
     cursor.execute(f"SELECT {id_column} FROM {table} WHERE {filter_column} = %s", (filter_value,))
+    return [row[id_column] for row in cursor.fetchall()]
+
+
+def get_ids_from_table_for_sites(cursor, table: str, id_column: str, site_ids: list) -> list:
+    """Obtiene lista de IDs de una tabla filtrando por site_id IN (...)."""
+    if not table_exists(cursor, table):
+        return []
+    if not site_ids:
+        return []
+    placeholders = ",".join(["%s"] * len(site_ids))
+    cursor.execute(f"SELECT {id_column} FROM {table} WHERE site_id IN ({placeholders})", site_ids)
     return [row[id_column] for row in cursor.fetchall()]
 
 
@@ -254,14 +307,32 @@ def clean_clinic_by_id():
 
         # 1. CAJA
         info("1. Limpiando datos de caja...")
+
+        # Hijas de cash_movement
+        log_delete("cash_movement_file", delete_all_for_sites(cursor, "cash_movement_file", SITE_IDS))
         log_delete("cash_movement", delete_all_for_sites(cursor, "cash_movement", SITE_IDS))
+
+        # Hijas de cash_session (schema actualizado: ON DELETE RESTRICT)
+        # cash_session_access no tiene site_id, usar subconsulta
+        log_delete(
+            "cash_session_access",
+            delete_by_parent_site_ids(cursor, "cash_session_access", "cash_session", "cash_session_id", SITE_IDS),
+        )
+        log_delete(
+            "cash_session_incident",
+            delete_by_parent_site_ids(cursor, "cash_session_incident", "cash_session", "cash_session_id", SITE_IDS),
+        )
+        # cash_session_count tiene site_id propio
+        log_delete("cash_session_count", delete_all_for_sites(cursor, "cash_session_count", SITE_IDS))
+
         log_delete("cash_session", delete_all_for_sites(cursor, "cash_session", SITE_IDS))
         log_delete("cash_register", delete_all_records(cursor, "cash_register", "clinic_id", CLINIC_ID))
         conn.commit()
 
         # 2. TAREAS
         info("2. Limpiando tareas...")
-        log_delete("task", delete_all_records(cursor, "task", "clinic_id", CLINIC_ID))
+        log_delete("task_comment", delete_all_records(cursor, "task_comment", "clinic_id", CLINIC_ID))
+        log_delete("task", delete_all_for_sites(cursor, "task", SITE_IDS))
         log_delete("task_status_group", delete_all_for_sites(cursor, "task_status_group", SITE_IDS))
         conn.commit()
 
@@ -300,28 +371,46 @@ def clean_clinic_by_id():
         # 7. AGENDA
         info("7. Limpiando agenda...")
         log_delete("schedule_history_entry", delete_by_parent_id(cursor, "schedule_history_entry", "schedule_block_id", schedule_block_ids))
-        log_delete("schedule_block", delete_all_records(cursor, "schedule_block", "clinic_id", CLINIC_ID))
+        log_delete("schedule_block", delete_in_batches(conn, cursor, "schedule_block", "clinic_id", CLINIC_ID))
         conn.commit()
 
         # 8. SESIONES PLANIFICADAS
         info("8. Limpiando sesiones planificadas...")
         log_delete("supply_consumption", delete_all_records(cursor, "supply_consumption", "clinic_id", CLINIC_ID))
         log_delete("planned_session_visit_state", delete_by_parent_id(cursor, "planned_session_visit_state", "planned_session_id", planned_session_ids))
-        log_delete("planned_session", delete_all_records(cursor, "planned_session", "clinic_id", CLINIC_ID))
+        log_delete("planned_session", delete_in_batches(conn, cursor, "planned_session", "clinic_id", CLINIC_ID))
         conn.commit()
 
         # 9. NOTAS CLÍNICAS
         info("9. Limpiando notas clínicas...")
-        log_delete("clinical_note_comment", delete_all_records(cursor, "clinical_note_comment", "clinic_id", CLINIC_ID))
-        log_delete("clinical_note", delete_all_records(cursor, "clinical_note", "clinic_id", CLINIC_ID))
+        # clinical_note tiene FK auto-referencial (amended_from_id) que hace el DELETE muy lento.
+        # Deshabilitamos triggers de FK temporalmente para borrado masivo.
+        if table_exists(cursor, "clinical_note"):
+            cursor.execute("ALTER TABLE clinical_note DISABLE TRIGGER ALL")
+            cursor.execute("ALTER TABLE clinical_note_comment DISABLE TRIGGER ALL")
+            conn.commit()
+            log_delete("clinical_note_comment", delete_in_batches(conn, cursor, "clinical_note_comment", "clinic_id", CLINIC_ID, batch_size=5000))
+            log_delete("clinical_note", delete_in_batches(conn, cursor, "clinical_note", "clinic_id", CLINIC_ID, batch_size=5000))
+            cursor.execute("ALTER TABLE clinical_note_comment ENABLE TRIGGER ALL")
+            cursor.execute("ALTER TABLE clinical_note ENABLE TRIGGER ALL")
+            conn.commit()
         log_delete("clinical_note_template", delete_all_records(cursor, "clinical_note_template", "clinic_id", CLINIC_ID))
         conn.commit()
 
         # 10. CARE PLANS Y FORM ASSIGNMENTS
         info("10. Limpiando care plans...")
-        log_delete("form_assignment", delete_all_records(cursor, "form_assignment", "clinic_id", CLINIC_ID))
-        log_delete("care_plan", delete_all_records(cursor, "care_plan", "clinic_id", CLINIC_ID))
-        conn.commit()
+        # care_plan es referenciada por muchas tablas (budget, clinical_note, pack_instance,
+        # planned_session, form_assignment, form_response) con ON DELETE SET NULL/CASCADE.
+        # Deshabilitamos triggers para evitar verificación de FK en cada fila.
+        if table_exists(cursor, "care_plan"):
+            cursor.execute("ALTER TABLE care_plan DISABLE TRIGGER ALL")
+            cursor.execute("ALTER TABLE form_assignment DISABLE TRIGGER ALL")
+            conn.commit()
+            log_delete("form_assignment", delete_in_batches(conn, cursor, "form_assignment", "clinic_id", CLINIC_ID, batch_size=5000))
+            log_delete("care_plan", delete_in_batches(conn, cursor, "care_plan", "clinic_id", CLINIC_ID, batch_size=5000))
+            cursor.execute("ALTER TABLE form_assignment ENABLE TRIGGER ALL")
+            cursor.execute("ALTER TABLE care_plan ENABLE TRIGGER ALL")
+            conn.commit()
 
         # 11. CONSENTIMIENTOS
         info("11. Limpiando consentimientos...")
@@ -415,14 +504,14 @@ def clean_clinic_by_id():
 
         # 24. NOTIFICACIONES Y DOCUMENTOS
         info("24. Limpiando notificaciones y documentos...")
-        log_delete("notification", delete_all_records(cursor, "notification", "clinic_id", CLINIC_ID))
-        log_delete("binaries", delete_all_records(cursor, "binaries", "clinic_id", CLINIC_ID))
+        log_delete("notification", delete_in_batches(conn, cursor, "notification", "clinic_id", CLINIC_ID))
+        log_delete("binaries", delete_in_batches(conn, cursor, "binaries", "clinic_id", CLINIC_ID))
         log_delete("document_references", delete_all_records(cursor, "document_references", "clinic_id", CLINIC_ID))
         conn.commit()
 
         # 25. PACIENTES
         info("25. Limpiando pacientes...")
-        log_delete("patient", delete_all_records(cursor, "patient", "clinic_id", CLINIC_ID))
+        log_delete("patient", delete_in_batches(conn, cursor, "patient", "clinic_id", CLINIC_ID))
         conn.commit()
 
         # 25b. CANALES DE ADQUISICIÓN
@@ -486,7 +575,7 @@ def clean_clinic_by_id():
 
         # 31. TAGS, INTEGRACIONES, OTROS
         info("31. Limpiando tags e integraciones...")
-        log_delete("tag", delete_all_records(cursor, "tag", "clinic_id", CLINIC_ID))
+        log_delete("tag", delete_all_for_sites(cursor, "tag", SITE_IDS))  # tag tiene site_id, no clinic_id
         log_delete("kommo_bot", delete_all_records(cursor, "kommo_bot", "clinic_id", CLINIC_ID))
         log_delete("partner_agreement", delete_all_records(cursor, "partner_agreement", "clinic_id", CLINIC_ID))
         log_delete("payment_method", delete_all_records(cursor, "payment_method", "clinic_id", CLINIC_ID))
@@ -529,6 +618,13 @@ def clean_clinic_by_id():
 
     except Exception as e:
         conn.rollback()
+        # Re-habilitar triggers por si quedaron deshabilitados
+        try:
+            for t in ["clinical_note", "clinical_note_comment", "care_plan", "form_assignment"]:
+                cursor.execute(f"ALTER TABLE {t} ENABLE TRIGGER ALL")
+            conn.commit()
+        except Exception:
+            pass
         error(f"Error durante la limpieza: {e}")
         import traceback
         traceback.print_exc()

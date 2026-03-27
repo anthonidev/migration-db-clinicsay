@@ -1,6 +1,8 @@
 import os
+import re
 import sys
 import json
+import unicodedata
 from datetime import datetime
 
 from ulid import ULID
@@ -239,11 +241,12 @@ INSERT INTO organization (
 );""")
 
     # 2. CLINIC (sin default_issuer_company_id, se actualiza después)
+    clinic_slug = generate_slug(clinic.get("name", ""))
     sql_parts.append(f"""
 -- CLINIC
 INSERT INTO clinic (
     id, organization_id, default_issuer_company_id,
-    name, description, phone, email,
+    name, slug, description, phone, email,
     country, timezone, default_currency,
     data_sharing_policy, clinic_status, record_status,
     record_metadata, created_at, updated_at
@@ -252,6 +255,7 @@ INSERT INTO clinic (
     '{org_id}',
     NULL,
     '{escape_sql(clinic.get("name", ""))}',
+    '{escape_sql(clinic_slug)}',
     {sql_str(clinic.get("description"))},
     {sql_str(clinic.get("phone"))},
     {sql_str(clinic.get("email"))},
@@ -284,16 +288,18 @@ INSERT INTO clinic (
             "streetLine2": addr.get("street_line2", ""),
         }, ensure_ascii=False)
 
+        site_slug = generate_slug(site.get("name", ""))
         sql_parts.append(f"""
 -- SITE {i + 1}: {site.get("name", "")}
 INSERT INTO site (
-    id, clinic_id, name, address, timezone,
+    id, clinic_id, name, slug, address, timezone,
     site_status, record_status, record_metadata,
     created_at, updated_at
 ) VALUES (
     '{site_id}',
     '{clinic_id}',
     '{escape_sql(site.get("name", ""))}',
+    '{escape_sql(site_slug)}',
     '{escape_sql(address_json)}'::jsonb,
     {sql_str(site.get("timezone"))},
     '{site.get("site_status", "ACTIVE")}',
@@ -308,7 +314,7 @@ INSERT INTO site (
     sql_parts.append(f"""
 -- COMPANY
 INSERT INTO company (
-    id, organization_id, clinic_id, site_id,
+    id, organization_id, site_id,
     name, legal_name,
     tax_id_type, tax_id_number, address_fiscal, country, type,
     legal_rep_name, legal_rep_id_type, legal_rep_id_number, legal_rep_position,
@@ -316,7 +322,6 @@ INSERT INTO company (
 ) VALUES (
     '{company_id}',
     '{org_id}',
-    '{clinic_id}',
     '{first_site_id}',
     '{escape_sql(comp.get("name", ""))}',
     {sql_str(comp.get("legal_name"))},
@@ -424,6 +429,17 @@ INSERT INTO payment_method (
 );""")
 
     return "\n".join(sql_parts)
+
+
+def generate_slug(name: str) -> str:
+    """Genera un slug URL-friendly desde un nombre."""
+    text = name.strip().lower()
+    nfkd = unicodedata.normalize("NFKD", text)
+    text = "".join(c for c in nfkd if not unicodedata.combining(c))
+    text = re.sub(r"[^a-z0-9\s-]", "", text)
+    text = re.sub(r"[\s]+", "-", text)
+    text = re.sub(r"-+", "-", text)
+    return text.strip("-")
 
 
 def escape_sql(value: str) -> str:
